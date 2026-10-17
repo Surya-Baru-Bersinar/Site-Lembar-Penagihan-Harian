@@ -1,7 +1,7 @@
 function doGet() {
   return HtmlService.createTemplateFromFile('Index')
     .evaluate()
-    .setTitle('Pembuat Tagihan LHT - SBB')
+    .setTitle('Pembuat Tagihan LHT - PTM')
     .addMetaTag('viewport', 'width=device-width, initial-scale=1')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
@@ -58,7 +58,7 @@ function getConfData() {
     perusahaans: unique(perusahaans),
     divisis: unique(divisis),
     tautanLHT: tautanLHT,
-    lhtSheet: lhtSheet 
+    lhtSheet: lhtSheet
   };
 }
 
@@ -192,10 +192,13 @@ function simpanKeSpreadsheetTarget(headerConfig, itemsData) {
     var lastRow = targetSheet.getLastRow();
 
     var insertRowIndex = lastRow;
-    var finder = targetSheet.createTextFinder("TOTAL");
-    var found = finder.findNext();
-    if (found) {
-      insertRowIndex = found.getRow() - 1;
+    var finder = targetSheet.createTextFinder("TOTAL")
+      .matchCase(false)
+      .searchByRegex(false);
+    var allMatches = finder.findAll();
+    if (allMatches.length > 0) {
+      var lastTotalCell = allMatches[allMatches.length - 1];
+      insertRowIndex = lastTotalCell.getRow() - 1;
       if (insertRowIndex < 3) insertRowIndex = lastRow;
     }
 
@@ -212,32 +215,50 @@ function simpanKeSpreadsheetTarget(headerConfig, itemsData) {
     var rowsToInsert = [];
     validItems.forEach(function(item, index) {
       rowsToInsert.push([
-        headerConfig.perusahaan || '', 
-        headerConfig.penagih || '',    
-        headerConfig.divisi || '',     
-        formattedTanggal,              
-        headerConfig.admin || '',      
-        startNo + index,               
-        item.noPelanggan || '',        
-        item.namaPelanggan || '',      
-        item.umurHariNum || 0,        
-        item.noFaktur || '',           
-        item.tglFaktur || '',          
-        item.nilaiFaktur || 0,         
-        item.terbayar || 0,            
-        item.sisaPiutang || 0,         
-        '', '', '', '', '', ''         
+        headerConfig.perusahaan || '',
+        headerConfig.penagih || '',
+        headerConfig.divisi || '',
+        formattedTanggal,
+        headerConfig.admin || '',
+        startNo + index,
+        item.noPelanggan || '',
+        item.namaPelanggan || '',
+        item.umurHariNum || 0,
+        item.noFaktur || '',
+        item.tglFaktur || '',
+        item.nilaiFaktur || 0,
+        item.terbayar || 0,
+        item.sisaPiutang || 0,
+        '', '', '', '', '', ''
       ]);
     });
 
     targetSheet.insertRowsAfter(insertRowIndex, rowsToInsert.length);
     var destRange = targetSheet.getRange(insertRowIndex + 1, 1, rowsToInsert.length, rowsToInsert[0].length);
-    destRange.setValues(rowsToInsert);
 
     if (insertRowIndex >= 3) {
       var sourceRange = targetSheet.getRange(insertRowIndex, 1, 1, rowsToInsert[0].length);
       sourceRange.copyTo(destRange, SpreadsheetApp.CopyPasteType.PASTE_FORMAT, false);
     }
+
+    var HAPUS_VALIDASI_BARIS_BARU = true;
+    if (HAPUS_VALIDASI_BARIS_BARU) {
+      destRange.clearDataValidations();
+    } else {
+      var rules = destRange.getDataValidations();
+      for (var r = 0; r < rules.length; r++) {
+        for (var c = 0; c < rules[r].length; c++) {
+          if (rules[r][c] != null) {
+            rules[r][c] = rules[r][c].copy().setAllowInvalid(true).build();
+          }
+        }
+      }
+      destRange.setDataValidations(rules);
+    }
+
+    destRange.setValues(rowsToInsert);
+
+    SpreadsheetApp.flush();
 
     return { 
       success: true, 

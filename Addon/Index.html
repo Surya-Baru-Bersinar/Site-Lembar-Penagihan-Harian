@@ -487,9 +487,9 @@
               <td>${item.isRowEmpty ? '' : (item.umur !== undefined ? item.umur : '')}</td>
               <td>${item.noFaktur || ''}</td>
               <td>${item.tglFaktur || ''}</td>
-              <td>${nilaiFakturVal}</td>
-              <td>${terbayarVal}</td>
-              <td>${terhutangVal}</td>
+              <td style="text-align:right; padding-right:4px;">${nilaiFakturVal}</td>
+              <td style="text-align:right; padding-right:4px;">${terbayarVal}</td>
+              <td style="text-align:right; padding-right:4px;">${terhutangVal}</td>
               <td></td>
               <td></td>
               <td></td>
@@ -527,21 +527,21 @@
 
           <table class="lht-table">
             <colgroup>
-              <col style="width: 2.2%;">  
-              <col style="width: 5.1%;">  
-              <col style="width: 15.4%;"> 
-              <col style="width: 3.1%;">  
-              <col style="width: 6.0%;">  
-              <col style="width: 6.6%;">  
-              <col style="width: 7.2%;">  
-              <col style="width: 7.2%;">  
-              <col style="width: 7.2%;">  
-              <col style="width: 5.1%;">  
-              <col style="width: 5.1%;">  
-              <col style="width: 3.1%;">  
-              <col style="width: 7.6%;">  
-              <col style="width: 7.6%;">  
-              <col style="width: 6.2%;">  
+              <col style="width: 2.2%;">
+              <col style="width: 5.1%;">
+              <col style="width: 15.4%;">
+              <col style="width: 3.1%;">
+              <col style="width: 6.0%;">
+              <col style="width: 6.6%;">
+              <col style="width: 7.2%;">
+              <col style="width: 7.2%;">
+              <col style="width: 7.2%;">
+              <col style="width: 5.1%;">
+              <col style="width: 5.1%;">
+              <col style="width: 3.1%;">
+              <col style="width: 7.6%;">
+              <col style="width: 7.6%;">
+              <col style="width: 6.2%;">
             </colgroup>
             <thead>
               <tr>
@@ -568,15 +568,14 @@
             <tfoot>
               <tr style="font-weight:bold; height:20px;">
                 <td colspan="6" style="text-align:right; padding-right:6px;">TOTAL TAGIHAN</td>
-                <td>${formatRupiah(totalNilai)}</td>
-                <td>${formatRupiah(totalTerbayar)}</td>
-                <td>${formatRupiah(totalTerhutang)}</td>
+                <td style="text-align:right; padding-right:4px;">${formatRupiah(totalNilai)}</td>
+                <td style="text-align:right; padding-right:4px;">${formatRupiah(totalTerbayar)}</td>
+                <td style="text-align:right; padding-right:4px;">${formatRupiah(totalTerhutang)}</td>
                 <td colspan="3" style="text-align:center;">TOTAL BAYAR</td>
                 <td></td>
                 <td></td>
                 <td></td>
               </tr>
-              <!-- TTD Mengikuti Persis Tata Letak Template Excel (1 Baris Tinggi: 9 + 2 + 2 + 2 Kolom) -->
               <tr style="font-weight:bold; height:38px;">
                 <td colspan="9" style="text-align:right; vertical-align:middle; padding-right:6px;">TTD SALES & COLLECTOR</td>
                 <td colspan="2"></td>
@@ -763,9 +762,9 @@
           const tableFoot = [
             [
               { content: 'TOTAL TAGIHAN', colSpan: 6, styles: { halign: 'right', valign: 'middle', fontStyle: 'bold' } },
-              { content: formatRupiah(totalNilai), styles: { halign: 'center', valign: 'middle', fontStyle: 'bold' } },
-              { content: formatRupiah(totalTerbayar), styles: { halign: 'center', valign: 'middle', fontStyle: 'bold' } },
-              { content: formatRupiah(totalTerhutang), styles: { halign: 'center', valign: 'middle', fontStyle: 'bold' } },
+              { content: formatRupiah(totalNilai), styles: { halign: 'right', valign: 'middle', fontStyle: 'bold' } },
+              { content: formatRupiah(totalTerbayar), styles: { halign: 'right', valign: 'middle', fontStyle: 'bold' } },
+              { content: formatRupiah(totalTerhutang), styles: { halign: 'right', valign: 'middle', fontStyle: 'bold' } },
               { content: 'TOTAL BAYAR', colSpan: 3, styles: { halign: 'center', valign: 'middle', fontStyle: 'bold' } },
               '', '', ''
             ],
@@ -810,21 +809,21 @@
               valign: 'middle'
             },
             columnStyles: {
-              0: { cellWidth: 8 },   
-              1: { cellWidth: 16 },  
-              2: { cellWidth: 42, halign: 'left' }, 
-              3: { cellWidth: 10 },  
-              4: { cellWidth: 18 },  
-              5: { cellWidth: 18 },  
-              6: { cellWidth: 20 },  
-              7: { cellWidth: 20 },  
-              8: { cellWidth: 20 },  
-              9: { cellWidth: 16 },  
-              10: { cellWidth: 18 }, 
-              11: { cellWidth: 10 }, 
-              12: { cellWidth: 20 }, 
-              13: { cellWidth: 20 }, 
-              14: { cellWidth: 21 }  
+              0: { cellWidth: 8 },
+              1: { cellWidth: 16 },
+              2: { cellWidth: 42, halign: 'left' },
+              3: { cellWidth: 10 },
+              4: { cellWidth: 18 },
+              5: { cellWidth: 18 },
+              6: { cellWidth: 20, halign: 'right' },
+              7: { cellWidth: 20, halign: 'right' },
+              8: { cellWidth: 20, halign: 'right' },
+              9: { cellWidth: 16 },
+              10: { cellWidth: 18 },
+              11: { cellWidth: 10 },
+              12: { cellWidth: 20 },
+              13: { cellWidth: 20 },
+              14: { cellWidth: 21 }
             }
           });
         });
