@@ -47,12 +47,12 @@ def clean_data_autofit(input_file, output_file):
     header_fallbacks = {
         "No. Faktur": ["No. Faktur"],
         "Tgl Faktur": ["Tgl Faktur"],
-        "Kode": ["Kode"],
-        "Jatuh Tempo": ["Jatuh Tempo", "JT", "Tgl JT"],
+        "Jatuh Tempo": ["Jatuh Tempo"],
+        "Kode": ["Kode", "NOPEL"],
         "Nama Pelanggan": ["Nama Pelanggan", "Nama"],
         "Nilai Faktur": ["Nilai Faktur"],
         "Sisa Piutang": ["Sisa Piutang", "Terutang"],
-        "Umur JT": ["Umur JT"],
+        "Umur JT": ["Umur JT", "Umur", "JT Hari"],
         "Sales": ["Sales", "Nama Penjual"],
         "Negara Pelanggan": ["Negara Pelanggan", "Alamat 1 Pelanggan", "Alamat 1"]
     }
@@ -115,6 +115,8 @@ def clean_data_autofit(input_file, output_file):
         "Nama Penjual": get_col_data("Sales"),
         "Nama Kontak": get_col_data("Negara Pelanggan")
     })
+
+    temp_df["No. Faktur"] = temp_df["No. Faktur"].astype(str).str.replace('INV/', '', regex=False)
 
     temp_df["Tgl Faktur"] = temp_df["Tgl Faktur"].apply(parse_tgl_faktur)
     temp_df["Jatuh Tempo"] = temp_df["Jatuh Tempo"].apply(parse_tgl_faktur)
@@ -187,7 +189,7 @@ def clean_data_autofit(input_file, output_file):
                 else:
                     worksheet.set_column(i, i, max_len)
                     
-        print(f"--> Sukses! File tersimpan di: {output_file}")
+        print(f"--> SUKSES! File tersimpan di: {output_file}")
         
     except Exception as e:
         print(f"--> Error saat menyimpan file: {e}")
