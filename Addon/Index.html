@@ -1,1 +1,844 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta charset="utf-8">
+  <title>Pembuat Tagihan LHT</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
 
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
+
+    .pdf-page {
+      width: 100%;
+      max-width: 1020px;
+      background: white;
+      padding: 18px 20px;
+      margin: 0 auto 20px auto;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+      border: 1px solid #cbd5e1;
+      box-sizing: border-box;
+      page-break-after: always;
+      page-break-inside: avoid;
+    }
+    .pdf-page:last-child {
+      page-break-after: avoid !important;
+    }
+
+    table.lht-header-info {
+      width: 100%;
+      font-size: 9.5px;
+      margin-bottom: 6px;
+      font-weight: bold;
+      border-collapse: collapse;
+    }
+    table.lht-header-info td {
+      font-weight: bold;
+      padding: 1px 0;
+    }
+
+    table.lht-table {
+      width: 100%;
+      table-layout: fixed;
+      border-collapse: collapse;
+      font-size: 9px;
+      line-height: 1.15;
+    }
+    table.lht-table th, table.lht-table td {
+      border: 1px solid #000;
+      padding: 3px 3px;
+      text-align: center;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+      white-space: normal;
+      overflow: hidden;
+    }
+    table.lht-table th {
+      font-weight: bold;
+      background-color: #ffffff;
+      font-size: 8.5px;
+    }
+
+    @media print {
+      @page {
+        size: A4 landscape;
+        margin: 5mm;
+      }
+      html, body {
+        background: white !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        height: auto !important;
+      }
+      .no-print {
+        display: none !important;
+      }
+      .print-wrapper {
+        max-width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+      #pdfPrintArea {
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+      .pdf-page {
+        border: none !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        height: auto !important;
+        page-break-inside: avoid !important;
+        page-break-after: always !important;
+        break-after: page !important;
+      }
+      .pdf-page:last-child {
+        page-break-after: auto !important;
+        break-after: auto !important;
+      }
+    }
+
+    .btn-animated { transition: all 0.2s ease-in-out; }
+    .btn-animated:active { transform: scale(0.95); }
+    .spinner {
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      border-top-color: #fff;
+      width: 14px;
+      height: 14px;
+      animation: spin 0.8s linear infinite;
+      display: inline-block;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body class="p-3 sm:p-6 text-gray-800">
+
+  <div class="max-w-7xl mx-auto space-y-6 print-wrapper">
+    
+    <div class="no-print bg-blue-900 text-white rounded-2xl p-5 shadow-lg flex flex-col md:flex-row justify-between items-center gap-4">
+      <div>
+        <h1 class="text-xl sm:text-2xl font-bold">📄 Pembuat Tagihan LHT</h1>
+        <div class="flex flex-wrap items-center gap-2 mt-1">
+          <p class="text-xs text-blue-200">Sistem Pembuat Laporan Hasil Tagihan Depo</p>
+          <span id="badgeWaktuPembaruan" class="bg-blue-800 text-blue-100 px-2.5 py-0.5 rounded-md font-mono text-[11px] border border-blue-700 shadow-sm">
+            🕒 Memuat waktu pembaruan...
+          </span>
+        </div>
+      </div>
+      <div class="flex flex-wrap items-center gap-2">
+        <button onclick="handleSimpanOnly()" id="btnSimpan" class="btn-animated bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-2 rounded-xl text-xs shadow flex items-center gap-1.5">
+          <span id="iconSimpan">💾</span>
+          <span id="textSimpan">Simpan Spreadsheet</span>
+        </button>
+        <button onclick="handleDirectPrint()" id="btnCetak" class="btn-animated bg-sky-600 hover:bg-sky-700 text-white font-bold px-3 py-2 rounded-xl text-xs shadow flex items-center gap-1.5">
+          <span>🖨️</span>
+          <span>Cetak Langsung</span>
+        </button>
+        <button onclick="handleDownloadPDFOnly()" id="btnUnduhPDF" class="btn-animated bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-3 py-2 rounded-xl text-xs shadow flex items-center gap-1.5">
+          <span id="iconUnduhPDF">📄</span>
+          <span id="textUnduhPDF">Unduh PDF Saja</span>
+        </button>
+        <button onclick="handleSimpanAndPDF()" id="btnSimpanUnduh" class="btn-animated bg-amber-500 hover:bg-amber-600 text-white font-bold px-3 py-2 rounded-xl text-xs shadow flex items-center gap-1.5">
+          <span id="iconSimpanUnduh">📥</span>
+          <span id="textSimpanUnduh">Simpan & Unduh PDF</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="no-print bg-white rounded-2xl shadow-sm p-5 border border-gray-200 grid grid-cols-2 md:grid-cols-6 gap-4 text-xs sm:text-sm">
+      <div>
+        <label class="block font-bold text-gray-700 mb-1">Nama Depo</label>
+        <select id="confDepo" onchange="updatePreviewOnly()" class="w-full border rounded-xl p-2 focus:ring-2 focus:ring-blue-500"></select>
+      </div>
+      <div>
+        <label class="block font-bold text-gray-700 mb-1">Penagih (Sales)</label>
+        <select id="confPenagih" onchange="updatePreviewOnly()" class="w-full border rounded-xl p-2 focus:ring-2 focus:ring-blue-500"></select>
+      </div>
+      <div>
+        <label class="block font-bold text-gray-700 mb-1">Perusahaan</label>
+        <select id="confPerusahaan" onchange="updatePreviewOnly()" class="w-full border rounded-xl p-2 focus:ring-2 focus:ring-blue-500"></select>
+      </div>
+      <div>
+        <label class="block font-bold text-gray-700 mb-1">Divisi</label>
+        <select id="confDivisi" onchange="updatePreviewOnly()" class="w-full border rounded-xl p-2 focus:ring-2 focus:ring-blue-500"></select>
+      </div>
+      <div>
+        <label class="block font-bold text-gray-700 mb-1">Tanggal</label>
+        <input type="date" id="confTanggal" onchange="updatePreviewOnly()" class="w-full border rounded-xl p-2 focus:ring-2 focus:ring-blue-500">
+      </div>
+      <div>
+        <label class="block font-bold text-gray-700 mb-1">Admin</label>
+        <select id="confAdmin" onchange="updatePreviewOnly()" class="w-full border rounded-xl p-2 focus:ring-2 focus:ring-blue-500"></select>
+      </div>
+    </div>
+
+    <div class="no-print bg-white rounded-2xl shadow-sm p-5 border border-gray-200">
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-3">
+        <label class="font-bold text-gray-700 text-xs sm:text-sm">🔍 Pilih Pelanggan (Bisa Ceklist Beberapa Pelanggan):</label>
+        <div class="space-x-3 text-xs">
+          <button onclick="selectAllCustomers(true)" class="text-blue-600 font-bold hover:underline">Centang Semua</button>
+          <span class="text-gray-300">|</span>
+          <button onclick="selectAllCustomers(false)" class="text-red-500 font-bold hover:underline">Hapus Semua</button>
+        </div>
+      </div>
+      <input type="text" id="custSearchInput" onkeyup="filterCustomerDropdown()" placeholder="Ketik nama atau kode pelanggan..." class="w-full border rounded-xl p-2.5 text-xs sm:text-sm mb-2">
+      <div id="customerListContainer" class="max-h-40 overflow-y-auto border rounded-xl p-2 bg-gray-50 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+      </div>
+    </div>
+
+    <div class="no-print bg-white rounded-2xl shadow-sm overflow-hidden border border-gray-200">
+      <div class="p-4 bg-gray-100 border-b flex justify-between items-center">
+        <h3 class="font-bold text-sm text-gray-700">Daftar Faktur Piutang Dipilih</h3>
+        <div class="flex items-center gap-2">
+          <button onclick="addEmptyRow()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow btn-animated flex items-center gap-1">
+            <span>+</span> <span>Tambah Baris Kosong</span>
+          </button>
+          <button onclick="removeEmptyRow()" class="bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow btn-animated flex items-center gap-1">
+            <span>−</span> <span>Hapus Baris Kosong</span>
+          </button>
+        </div>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-xs text-center border-collapse">
+          <thead class="bg-blue-900 text-white uppercase text-[10px]">
+            <tr>
+              <th class="p-2.5"><input type="checkbox" id="checkAllRows" onchange="toggleCheckAllRows(this.checked)"></th>
+              <th class="p-2.5">No. Pelanggan</th>
+              <th class="p-2.5">Nama Pelanggan</th>
+              <th class="p-2.5">No. Faktur</th>
+              <th class="p-2.5">Tgl. Faktur</th>
+              <th class="p-2.5">Umur</th>
+              <th class="p-2.5">Nilai Faktur</th>
+              <th class="p-2.5">Terhutang</th>
+            </tr>
+          </thead>
+          <tbody id="piutangTableBody" class="divide-y">
+            <tr><td colspan="8" class="p-6 text-gray-400">Memuat data...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="mt-8 print-wrapper">
+      <h2 class="no-print text-lg font-bold text-gray-800 mb-4">Pratinjau Lembar LHT (Maksimal 17 Baris Per Halaman)</h2>
+      <div id="pdfPrintArea">
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    let rawPiutangData = [];
+    let customerList = [];
+    let selectedCustomerKeys = new Set();
+    let renderedFilteredItems = [];
+    let customEmptyRowsCount = 0;
+    let currentActiveItems = [];
+
+    window.onload = function() {
+      document.getElementById('confTanggal').valueAsDate = new Date();
+      loadConfData();
+      loadPiutangData();
+    };
+
+    function loadConfData() {
+      google.script.run.withSuccessHandler(function(res) {
+        if (!res.success) return alert(res.message);
+        populateSelect('confAdmin', res.admins);
+        populateSelect('confPenagih', res.penagihs);
+        populateSelect('confDepo', res.depos);
+        populateSelect('confPerusahaan', res.perusahaans);
+        populateSelect('confDivisi', res.divisis);
+      }).getConfData();
+    }
+
+    function populateSelect(id, items) {
+      const el = document.getElementById(id);
+      el.innerHTML = '';
+      items.forEach(item => {
+        const opt = document.createElement('option');
+        opt.value = item;
+        opt.textContent = item;
+        el.appendChild(opt);
+      });
+    }
+
+    function loadPiutangData() {
+      google.script.run.withSuccessHandler(function(res) {
+        if (!res.success) return alert(res.message);
+        rawPiutangData = res.items || [];
+        
+        const badgeEl = document.getElementById('badgeWaktuPembaruan');
+        if (res.waktuPembaruan) {
+          badgeEl.innerHTML = `🕒 Data diperbarui: <b>${res.waktuPembaruan}</b>`;
+        } else {
+          badgeEl.innerHTML = `🕒 Data diperbarui: -`;
+        }
+
+        const custMap = new Map();
+        rawPiutangData.forEach(item => {
+          const key = `${item.noPelanggan} - ${item.namaPelanggan}`;
+          if (!custMap.has(key)) {
+            custMap.set(key, { no: item.noPelanggan, nama: item.namaPelanggan, key: key });
+          }
+        });
+        customerList = Array.from(custMap.values());
+        renderCustomerDropdown();
+        renderPiutangTable();
+      }).getPiutangData();
+    }
+
+    function renderCustomerDropdown() {
+      const container = document.getElementById('customerListContainer');
+      container.innerHTML = '';
+      
+      customerList.forEach((cust, idx) => {
+        const div = document.createElement('div');
+        div.className = 'flex items-center space-x-2 p-1.5 hover:bg-white rounded border border-transparent hover:border-gray-200';
+        div.innerHTML = `
+          <input type="checkbox" id="cust_${idx}" ${selectedCustomerKeys.has(cust.key) ? 'checked' : ''} onchange="toggleCustomerSelect('${cust.key}', this.checked)" class="rounded text-blue-600">
+          <label for="cust_${idx}" class="text-xs font-medium cursor-pointer truncate">${cust.key}</label>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    function filterCustomerDropdown() {
+      const q = document.getElementById('custSearchInput').value.toLowerCase();
+      const container = document.getElementById('customerListContainer');
+      const children = container.children;
+      customerList.forEach((cust, i) => {
+        if (cust.key.toLowerCase().includes(q)) {
+          children[i].style.display = 'flex';
+        } else {
+          children[i].style.display = 'none';
+        }
+      });
+    }
+
+    function toggleCustomerSelect(key, isChecked) {
+      if (isChecked) selectedCustomerKeys.add(key);
+      else selectedCustomerKeys.delete(key);
+      renderPiutangTable();
+    }
+
+    function selectAllCustomers(status) {
+      if (status) selectedCustomerKeys = new Set(customerList.map(c => c.key));
+      else selectedCustomerKeys.clear();
+      renderCustomerDropdown();
+      renderPiutangTable();
+    }
+
+    function renderPiutangTable() {
+      const tbody = document.getElementById('piutangTableBody');
+      tbody.innerHTML = '';
+
+      renderedFilteredItems = rawPiutangData.filter(item => {
+        const key = `${item.noPelanggan} - ${item.namaPelanggan}`;
+        return selectedCustomerKeys.has(key);
+      });
+
+      if (renderedFilteredItems.length === 0 && customEmptyRowsCount === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" class="p-6 text-gray-400">Silakan centang pelanggan di atas untuk menampilkan faktur.</td></tr>';
+        renderPDFPreview([]);
+        return;
+      }
+
+      renderedFilteredItems.forEach((item, idx) => {
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-blue-50 transition';
+        tr.innerHTML = `
+          <td class="p-2"><input type="checkbox" class="row-cb" data-idx="${idx}" checked onchange="updateCheckedRows()"></td>
+          <td class="p-2">${item.noPelanggan}</td>
+          <td class="p-2 font-semibold text-left">${item.namaPelanggan}</td>
+          <td class="p-2 font-medium">${item.noFaktur}</td>
+          <td class="p-2">${item.tglFaktur}</td>
+          <td class="p-2 text-red-600 font-bold">${item.umur}</td>
+          <td class="p-2">Rp ${formatRupiah(item.nilaiFaktur)}</td>
+          <td class="p-2 font-bold text-blue-900">Rp ${formatRupiah(item.sisaPiutang)}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      updateCheckedRows();
+    }
+
+    function addEmptyRow() {
+      customEmptyRowsCount++;
+      updateCheckedRows();
+    }
+
+    function removeEmptyRow() {
+      if (customEmptyRowsCount > 0) {
+        customEmptyRowsCount--;
+        updateCheckedRows();
+      }
+    }
+
+    function toggleCheckAllRows(status) {
+      const cbs = document.querySelectorAll('.row-cb');
+      cbs.forEach(cb => cb.checked = status);
+      updateCheckedRows();
+    }
+
+    function updateCheckedRows() {
+      const cbs = document.querySelectorAll('.row-cb');
+      const activeItems = [];
+      
+      cbs.forEach(cb => {
+        if (cb.checked) {
+          const idx = parseInt(cb.getAttribute('data-idx'));
+          if (renderedFilteredItems[idx]) {
+            activeItems.push(renderedFilteredItems[idx]);
+          }
+        }
+      });
+
+      for (let i = 0; i < customEmptyRowsCount; i++) {
+        activeItems.push({
+          isRowEmpty: true,
+          noPelanggan: '',
+          namaPelanggan: '',
+          noFaktur: '',
+          tglFaktur: '',
+          umur: '',
+          nilaiFaktur: 0,
+          terbayar: 0,
+          sisaPiutang: 0
+        });
+      }
+
+      currentActiveItems = activeItems;
+      renderPDFPreview(activeItems);
+    }
+
+    function updatePreviewOnly() {
+      renderPDFPreview(currentActiveItems);
+    }
+
+    function formatDateDMY(val) {
+      if (!val) return '';
+      if (val.indexOf('-') !== -1) {
+        const parts = val.split('-');
+        if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
+      }
+      return val;
+    }
+
+    function renderPDFPreview(items) {
+      const container = document.getElementById('pdfPrintArea');
+      container.innerHTML = '';
+
+      if (items.length === 0) {
+        container.innerHTML = '<div class="no-print bg-white p-8 rounded-xl border text-center text-gray-400">Belum ada data piutang terpilih.</div>';
+        return;
+      }
+
+      const pagesData = [];
+      for (let i = 0; i < items.length; i += 17) {
+        pagesData.push(items.slice(i, i + 17));
+      }
+
+      const depo = document.getElementById('confDepo').value || 'SULAWESI';
+      const penagih = document.getElementById('confPenagih').value || '';
+      const perusahaan = document.getElementById('confPerusahaan').value || '';
+      const divisi = document.getElementById('confDivisi').value || '';
+      const admin = document.getElementById('confAdmin').value || '';
+      const tanggalRaw = document.getElementById('confTanggal').value || '';
+      const tanggalFormatted = formatDateDMY(tanggalRaw);
+
+      pagesData.forEach((pageItems, pIdx) => {
+        let totalNilai = 0, totalTerbayar = 0, totalTerhutang = 0;
+
+        let rowsHtml = '';
+        pageItems.forEach((item, rIdx) => {
+          totalNilai += item.nilaiFaktur || 0;
+          totalTerbayar += item.terbayar || 0;
+          totalTerhutang += item.sisaPiutang || 0;
+
+          const terbayarVal = item.isRowEmpty 
+            ? '' 
+            : (item.terbayar > 0 ? formatRupiah(item.terbayar) : '');
+
+          const nilaiFakturVal = item.isRowEmpty 
+            ? '' 
+            : (item.nilaiFaktur ? formatRupiah(item.nilaiFaktur) : '');
+
+          const terhutangVal = item.isRowEmpty 
+            ? '' 
+            : (item.sisaPiutang ? formatRupiah(item.sisaPiutang) : '');
+
+          rowsHtml += `
+            <tr style="height:20px;">
+              <td>${item.isRowEmpty ? '' : (pIdx * 17 + rIdx + 1)}</td>
+              <td>${item.noPelanggan || ''}</td>
+              <td style="text-align:left; font-weight:600; padding-left:3px;">${item.namaPelanggan || ''}</td>
+              <td>${item.isRowEmpty ? '' : (item.umur !== undefined ? item.umur : '')}</td>
+              <td>${item.noFaktur || ''}</td>
+              <td>${item.tglFaktur || ''}</td>
+              <td>${nilaiFakturVal}</td>
+              <td>${terbayarVal}</td>
+              <td>${terhutangVal}</td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+            </tr>
+          `;
+        });
+
+        const pageDiv = document.createElement('div');
+        pageDiv.className = 'pdf-page';
+        pageDiv.innerHTML = `
+          <div style="text-align:center; font-weight:bold; font-size:14px; margin-bottom:6px; height:20px;">
+            LAPORAN HASIL TAGIHAN DEPO ${depo}
+          </div>
+
+          <table class="lht-header-info">
+            <tr>
+              <td style="width:6%;">Nama</td>
+              <td style="width:24%;">: ${penagih}</td>
+              <td style="width:10%;">Perusahaan</td>
+              <td style="width:18%;">: ${perusahaan}</td>
+              <td style="width:6%;">Divisi</td>
+              <td style="width:10%;">: ${divisi}</td>
+              <td style="width:8%;">Tanggal</td>
+              <td>: ${tanggalFormatted}</td>
+            </tr>
+            <tr>
+              <td colspan="6"></td>
+              <td>Di input oleh</td>
+              <td>: ${admin}</td>
+            </tr>
+          </table>
+
+          <table class="lht-table">
+            <colgroup>
+              <col style="width: 2.2%;">  
+              <col style="width: 5.1%;">  
+              <col style="width: 15.4%;"> 
+              <col style="width: 3.1%;">  
+              <col style="width: 6.0%;">  
+              <col style="width: 6.6%;">  
+              <col style="width: 7.2%;">  
+              <col style="width: 7.2%;">  
+              <col style="width: 7.2%;">  
+              <col style="width: 5.1%;">  
+              <col style="width: 5.1%;">  
+              <col style="width: 3.1%;">  
+              <col style="width: 7.6%;">  
+              <col style="width: 7.6%;">  
+              <col style="width: 6.2%;">  
+            </colgroup>
+            <thead>
+              <tr>
+                <th>No.</th>
+                <th>Kode</th>
+                <th>Customer</th>
+                <th>Umur</th>
+                <th>No. Faktur</th>
+                <th>Tgl. Faktur</th>
+                <th>Nilai Faktur</th>
+                <th>Terbayar</th>
+                <th>Terhutang</th>
+                <th>BG / Bank</th>
+                <th>No. BG / Rek.</th>
+                <th>Tgl</th>
+                <th>Nilai TF/BG</th>
+                <th>Nilai Tunai</th>
+                <th>Ket</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rowsHtml}
+            </tbody>
+            <tfoot>
+              <tr style="font-weight:bold; height:20px;">
+                <td colspan="6" style="text-align:right; padding-right:6px;">TOTAL TAGIHAN</td>
+                <td>${formatRupiah(totalNilai)}</td>
+                <td>${formatRupiah(totalTerbayar)}</td>
+                <td>${formatRupiah(totalTerhutang)}</td>
+                <td colspan="3" style="text-align:center;">TOTAL BAYAR</td>
+                <td></td>
+                <td></td>
+                <td></td>
+              </tr>
+              <!-- TTD Mengikuti Persis Tata Letak Template Excel (1 Baris Tinggi: 9 + 2 + 2 + 2 Kolom) -->
+              <tr style="font-weight:bold; height:38px;">
+                <td colspan="9" style="text-align:right; vertical-align:middle; padding-right:6px;">TTD SALES & COLLECTOR</td>
+                <td colspan="2"></td>
+                <td colspan="2" style="text-align:center; vertical-align:middle;">TGL & TTD ADMIN</td>
+                <td colspan="2"></td>
+              </tr>
+            </tfoot>
+          </table>
+        `;
+        container.appendChild(pageDiv);
+      });
+    }
+
+    function setButtonLoading(btnType, isLoading) {
+      const btnS = document.getElementById('btnSimpan');
+      const btnU = document.getElementById('btnUnduhPDF');
+      const btnSU = document.getElementById('btnSimpanUnduh');
+      const btnC = document.getElementById('btnCetak');
+
+      if (isLoading) {
+        btnS.disabled = true; btnU.disabled = true; btnSU.disabled = true; btnC.disabled = true;
+        btnS.classList.add('opacity-60'); btnU.classList.add('opacity-60'); btnSU.classList.add('opacity-60'); btnC.classList.add('opacity-60');
+
+        if (btnType === 'simpan') {
+          document.getElementById('iconSimpan').innerHTML = '<span class="spinner"></span>';
+          document.getElementById('textSimpan').innerText = 'Menyimpan...';
+        } else if (btnType === 'pdf') {
+          document.getElementById('iconUnduhPDF').innerHTML = '<span class="spinner"></span>';
+          document.getElementById('textUnduhPDF').innerText = 'Membuat PDF...';
+        } else if (btnType === 'simpan_pdf') {
+          document.getElementById('iconSimpanUnduh').innerHTML = '<span class="spinner"></span>';
+          document.getElementById('textSimpanUnduh').innerText = 'Memproses...';
+        }
+      } else {
+        btnS.disabled = false; btnU.disabled = false; btnSU.disabled = false; btnC.disabled = false;
+        btnS.classList.remove('opacity-60'); btnU.classList.remove('opacity-60'); btnSU.classList.remove('opacity-60'); btnC.classList.remove('opacity-60');
+
+        document.getElementById('iconSimpan').innerText = '💾';
+        document.getElementById('textSimpan').innerText = 'Simpan Spreadsheet';
+        document.getElementById('iconUnduhPDF').innerText = '📄';
+        document.getElementById('textUnduhPDF').innerText = 'Unduh PDF Saja';
+        document.getElementById('iconSimpanUnduh').innerText = '📥';
+        document.getElementById('textSimpanUnduh').innerText = 'Simpan & Unduh PDF';
+      }
+    }
+
+    function handleDirectPrint() {
+      if (currentActiveItems.length === 0) {
+        return alert('Silakan centang minimal satu data piutang!');
+      }
+      window.print();
+    }
+
+    function handleSimpanOnly() {
+      executeSaveProcess(false);
+    }
+
+    function handleDownloadPDFOnly() {
+      if (currentActiveItems.length === 0) {
+        return alert('Silakan centang minimal satu data piutang!');
+      }
+      setButtonLoading('pdf', true);
+      setTimeout(function() {
+        generateAndDownloadPDF();
+        setButtonLoading('pdf', false);
+      }, 300);
+    }
+
+    function handleSimpanAndPDF() {
+      executeSaveProcess(true);
+    }
+
+    function executeSaveProcess(shouldDownloadPDF) {
+      const validItemsToSave = currentActiveItems.filter(item => !item.isRowEmpty);
+
+      if (validItemsToSave.length === 0) {
+        return alert('Silakan centang minimal satu data piutang untuk disimpan!');
+      }
+
+      const headerConfig = {
+        depo: document.getElementById('confDepo').value,
+        penagih: document.getElementById('confPenagih').value,
+        perusahaan: document.getElementById('confPerusahaan').value,
+        divisi: document.getElementById('confDivisi').value,
+        tanggal: document.getElementById('confTanggal').value,
+        admin: document.getElementById('confAdmin').value
+      };
+
+      const btnType = shouldDownloadPDF ? 'simpan_pdf' : 'simpan';
+      setButtonLoading(btnType, true);
+
+      google.script.run
+        .withSuccessHandler(function(res) {
+          setButtonLoading(btnType, false);
+          if (!res.success) {
+            return alert(res.message);
+          }
+
+          alert(res.message);
+
+          if (shouldDownloadPDF) {
+            generateAndDownloadPDF();
+          }
+        })
+        .withFailureHandler(function(err) {
+          setButtonLoading(btnType, false);
+          alert('Terjadi kesalahan koneksi: ' + err.message);
+        })
+        .simpanKeSpreadsheetTarget(headerConfig, currentActiveItems);
+    }
+
+    function generateAndDownloadPDF() {
+      try {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({
+          orientation: 'landscape',
+          unit: 'mm',
+          format: 'a4'
+        });
+
+        const depo = document.getElementById('confDepo').value || 'DEPO';
+        const penagihRaw = document.getElementById('confPenagih').value || 'Penagih';
+        const cleanPenagih = penagihRaw.replace(/[/\\?%*:|"<>]/g, '').trim();
+        const perusahaan = document.getElementById('confPerusahaan').value || '';
+        const divisi = document.getElementById('confDivisi').value || '';
+        const admin = document.getElementById('confAdmin').value || '';
+        const tanggalRaw = document.getElementById('confTanggal').value || '';
+        const tanggalFormatted = formatDateDMY(tanggalRaw);
+
+        const fileName = `LHT_${depo}_${cleanPenagih}_${tanggalFormatted.replace(/\//g, '-')}.pdf`;
+
+        const pagesData = [];
+        for (let i = 0; i < currentActiveItems.length; i += 17) {
+          pagesData.push(currentActiveItems.slice(i, i + 17));
+        }
+
+        pagesData.forEach((pageItems, pIdx) => {
+          if (pIdx > 0) doc.addPage();
+
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(13);
+          doc.text(`LAPORAN HASIL TAGIHAN DEPO ${depo}`, 148.5, 12, { align: 'center' });
+
+          doc.setFontSize(8.5);
+          doc.setFont('helvetica', 'bold');
+
+          doc.text('Nama', 10, 19);
+          doc.text(`: ${cleanPenagih}`, 28, 19);
+
+          doc.text('Perusahaan', 90, 19);
+          doc.text(`: ${perusahaan}`, 112, 19);
+
+          doc.text('Divisi', 165, 19);
+          doc.text(`: ${divisi}`, 178, 19);
+
+          doc.text('Tanggal', 225, 19);
+          doc.text(`: ${tanggalFormatted}`, 245, 19);
+
+          doc.text('Di input oleh', 225, 23.5);
+          doc.text(`: ${admin}`, 245, 23.5);
+
+          let totalNilai = 0, totalTerbayar = 0, totalTerhutang = 0;
+          const tableBody = [];
+
+          pageItems.forEach((item, rIdx) => {
+            totalNilai += item.nilaiFaktur || 0;
+            totalTerbayar += item.terbayar || 0;
+            totalTerhutang += item.sisaPiutang || 0;
+
+            tableBody.push([
+              item.isRowEmpty ? '' : (pIdx * 17 + rIdx + 1),
+              item.noPelanggan || '',
+              item.namaPelanggan || '',
+              item.isRowEmpty ? '' : (item.umur !== undefined ? item.umur : ''),
+              item.noFaktur || '',
+              item.tglFaktur || '',
+              item.isRowEmpty ? '' : (item.nilaiFaktur ? formatRupiah(item.nilaiFaktur) : ''),
+              item.isRowEmpty ? '' : (item.terbayar > 0 ? formatRupiah(item.terbayar) : ''),
+              item.isRowEmpty ? '' : (item.sisaPiutang ? formatRupiah(item.sisaPiutang) : ''),
+              '', '', '', '', '', ''
+            ]);
+          });
+
+          const tableFoot = [
+            [
+              { content: 'TOTAL TAGIHAN', colSpan: 6, styles: { halign: 'right', valign: 'middle', fontStyle: 'bold' } },
+              { content: formatRupiah(totalNilai), styles: { halign: 'center', valign: 'middle', fontStyle: 'bold' } },
+              { content: formatRupiah(totalTerbayar), styles: { halign: 'center', valign: 'middle', fontStyle: 'bold' } },
+              { content: formatRupiah(totalTerhutang), styles: { halign: 'center', valign: 'middle', fontStyle: 'bold' } },
+              { content: 'TOTAL BAYAR', colSpan: 3, styles: { halign: 'center', valign: 'middle', fontStyle: 'bold' } },
+              '', '', ''
+            ],
+            [
+              { content: 'TTD SALES & COLLECTOR', colSpan: 9, styles: { halign: 'right', valign: 'middle', fontStyle: 'bold', minCellHeight: 12 } },
+              { content: '', colSpan: 2, styles: { minCellHeight: 12 } },
+              { content: 'TGL & TTD ADMIN', colSpan: 2, styles: { halign: 'center', valign: 'middle', fontStyle: 'bold', minCellHeight: 12 } },
+              { content: '', colSpan: 2, styles: { minCellHeight: 12 } }
+            ]
+          ];
+
+          doc.autoTable({
+            startY: 27,
+            head: [['No.', 'Kode', 'Customer', 'Umur', 'No. Faktur', 'Tgl. Faktur', 'Nilai Faktur', 'Terbayar', 'Terhutang', 'BG / Bank', 'No. BG / Rek.', 'Tgl', 'Nilai TF/BG', 'Nilai Tunai', 'Ket']],
+            body: tableBody,
+            foot: tableFoot,
+            margin: { left: 10, right: 10 },
+            theme: 'grid',
+            styles: {
+              font: 'helvetica',
+              fontSize: 7.5,
+              cellPadding: 1.2,
+              alignment: 'center',
+              textColor: [0, 0, 0],
+              lineColor: [0, 0, 0],
+              lineWidth: 0.15
+            },
+            headStyles: {
+              fillColor: [255, 255, 255],
+              textColor: [0, 0, 0],
+              lineColor: [0, 0, 0],
+              lineWidth: 0.15,
+              fontStyle: 'bold',
+              halign: 'center'
+            },
+            footStyles: {
+              fillColor: [255, 255, 255],
+              textColor: [0, 0, 0],
+              lineColor: [0, 0, 0],
+              lineWidth: 0.15,
+              fontStyle: 'bold',
+              valign: 'middle'
+            },
+            columnStyles: {
+              0: { cellWidth: 8 },   
+              1: { cellWidth: 16 },  
+              2: { cellWidth: 42, halign: 'left' }, 
+              3: { cellWidth: 10 },  
+              4: { cellWidth: 18 },  
+              5: { cellWidth: 18 },  
+              6: { cellWidth: 20 },  
+              7: { cellWidth: 20 },  
+              8: { cellWidth: 20 },  
+              9: { cellWidth: 16 },  
+              10: { cellWidth: 18 }, 
+              11: { cellWidth: 10 }, 
+              12: { cellWidth: 20 }, 
+              13: { cellWidth: 20 }, 
+              14: { cellWidth: 21 }  
+            }
+          });
+        });
+
+        doc.save(fileName);
+      } catch (err) {
+        alert('Gagal membuat PDF: ' + err.message);
+      }
+    }
+
+    function formatRupiah(num) {
+      if (isNaN(num) || num === null) return '0';
+      return Math.round(num).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    }
+  </script>
+</body>
+</html>
