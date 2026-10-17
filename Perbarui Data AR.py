@@ -1,109 +1,99 @@
+import os
 import sys
 import shutil
 import subprocess
-from pathlib import Path
-
-FOLDER_DAPUR = Path("Dapur")
-
-FILE_SYARAT = [
-    "__init__.py",
-    "1_CleanerAcc.py",
-    "1_CleanerAccGiro.py",
-    "1B_DownloaderMasterData.py",
-    "1C_MergedMaster2Main.py",
-    "1D_CleanZeroAR.py",
-    "1E_DownloaderPendingData.py",
-    "2_CompareGiro.py",
-    "2_ComparePending.py",
-    "2_FilterAR.py",
-    "3_CalculateAR.py",
-    "3_CalculateARPurePython.py",
-    "4_HelperCleaningData.py",
-    "5_InjectDataToSS.py",
-    "6_PrintByPython.py",
-    "credentials.json",
-    "piutang.conf",
-]
-
-ALUR_EKSEKUSI = [
-    ("1_CleanerAcc.py", "Memulai eksekusi pembersihan data utama"),
-    ("1_CleanerAccGiro.py", "Memulai eksekusi pembersihan data utama"),
-    ("1B_DownloaderMasterData.py", "Memulai pengunduhan data master"),
-    ("1C_MergedMaster2Main.py", "Memulai penggabungan data master ke data utama"),
-    ("1D_CleanZeroAR.py", "Memulai pembersihan saldo piutang nol"),
-    ("1E_DownloaderPendingData.py", "Memulai pengunduhan data pendingan"),
-    ("2_CompareGiro.py", "Memulai komparasi data giro"),
-    ("2_ComparePending.py", "Memulai komparasi data pendingan"),
-    ("2_FilterAR.py", "Memulai eksekusi filter data sementara"),
-    ("3_CalculateAR.py", "Memulai eksekusi menyalin dan menyusun data pada template"),
-    ("3_CalculateARPurePython.py", "Menggunakan metode pure code yang ringan"),
-    ("4_HelperCleaningData.py", "Memulai persiapan data untuk disusun ke Spreadsheets"),
-    ("5_InjectDataToSS.py", "Memulai unggah data ke Spreadsheets"),
-    ("6_PrintByPython.py", "Memulai menjalankan print otomatis dengan konfigurasi"),
-]
 
 
-def bersihkan_file_sementara(folder: Path, pola_file: list[str]) -> None:
-    for pola in pola_file:
-        for file_path in folder.glob(pola):
-            try:
-                file_path.unlink()
-            except Exception:
-                pass
+def main():
+    current_dir = os.path.dirname(os.path.abspath(__file__))
 
-
-def salin_laporan_ar(folder_sumber: Path) -> None:
-    for file_laporan in folder_sumber.glob("*AR.xlsm"):
-        shutil.copy2(file_laporan, file_laporan.name)
-
-
-def jalankan_otomatisasi():
-    if not FOLDER_DAPUR.is_dir():
-        print("--> Folder Dapur tidak ditemukan.")
-        input("--> Tekan enter untuk keluar.")
-        return
-
-    for nama_file in FILE_SYARAT:
-        jalur_file = FOLDER_DAPUR / nama_file
-        if not jalur_file.is_file():
-            print(f"--> File {nama_file} tidak ditemukan di dalam folder Dapur.")
-            input("--> Tekan enter untuk keluar.")
-            return
-
-    bersihkan_file_sementara(FOLDER_DAPUR, ["*temp.xlsx", "Giro.xls", "Piutang.xls"])
-
-    file_piutang = Path("Piutang.xls")
-    if file_piutang.is_file():
-        shutil.copy2(file_piutang, FOLDER_DAPUR / file_piutang.name)
+    if os.path.basename(current_dir) == 'Dapur':
+        dapur_dir = current_dir
     else:
-        print("--> File Piutang.xls tidak ditemukan untuk diproses.")
-        input("--> Tekan enter untuk keluar.")
+        dapur_dir = os.path.join(current_dir, 'Dapur')
+
+    print("--> OTOMATISASI PEMBARUAN DATABASE AR SITUS")
+
+    if not os.path.exists(dapur_dir):
+        print(f"--> [ERROR] Folder '{dapur_dir}' tidak ditemukan!")
+        input("Program telah selesai di jalankan dan tekan enter untuk keluar.")
         return
 
-    file_giro = Path("Giro.xls")
-    if file_giro.is_file():
-        shutil.copy2(file_giro, FOLDER_DAPUR / file_giro.name)
+    required_files = [
+        '__init__.py',
+        '1_CleanerAcc.py',
+        '1_CleanerAccGiro.py',
+        '1B_DownloaderMasterData.py',
+        '1C_MergedMaster2Main.py',
+        '1D_CleanZeroAR.py',
+        '2_CompareGiro.py',
+        '3_AdjDateFormat.py',
+        '4_HelperSSData.py',
+        '5_ARInjectionToSS.py',
+        'piutang.conf',
+        'credentials.json',
+    ]
 
-    try:
-        for skrip, pesan in ALUR_EKSEKUSI:
-            print(f"--> {pesan}")
-            subprocess.run([sys.executable, skrip], cwd=FOLDER_DAPUR, check=True)
+    missing_files = [
+        f
+        for f in required_files
+        if not os.path.exists(os.path.join(dapur_dir, f))
+    ]
 
-            if skrip == "3_CalculateAR.py":
-                salin_laporan_ar(FOLDER_DAPUR)
-
-    except subprocess.CalledProcessError:
-        print("\nError terjadi kesalahan saat menjalankan skrip.")
-        input("--> Tekan enter untuk keluar.")
+    if missing_files:
+        print(
+            "--> [ERROR] Proses digagalkan! Berkas berikut tidak ditemukan di folder Dapur:"
+        )
+        for mf in missing_files:
+            print(f"--> - {mf}")
+        input("Program telah selesai di jalankan dan tekan enter untuk keluar.")
         return
 
-    bersihkan_file_sementara(
-        FOLDER_DAPUR, ["*temp.xlsx", "Giro.xls", "Piutang.xls", "Print_AR.xlsm"]
-    )
+    print("--> [OK] Semua berkas persyaratan lengkap.")
 
-    print("--> Semua proses telah selesai dijalankan.")
-    input("--> Tekan enter untuk keluar.")
+    source_files = ['Piutang.xls', 'Giro.xls']
+    missing_source_files = [
+        f for f in source_files if not os.path.exists(os.path.join(current_dir, f))
+    ]
+
+    if missing_source_files:
+        print("--> [ERROR] Berkas sumber berikut tidak ditemukan di folder utama:")
+        for mf in missing_source_files:
+            print(f"--> - {mf}")
+        input("Program telah selesai di jalankan dan tekan enter untuk keluar.")
+        return
+
+    for f in source_files:
+        src = os.path.join(current_dir, f)
+        dst = os.path.join(dapur_dir, f)
+        shutil.copy2(src, dst)
+        print(f"--> [OK] Berhasil menyalin {f} ke folder Dapur.")
+
+    scripts_to_run = [
+        '1_CleanerAcc.py',
+        '1_CleanerAccGiro.py',
+        '1B_DownloaderMasterData.py',
+        '1C_MergedMaster2Main.py',
+        '1D_CleanZeroAR.py',
+        '2_CompareGiro.py',
+        '3_AdjDateFormat.py',
+        '4_HelperSSData.py',
+        '5_ARInjectionToSS.py',
+    ]
+
+    for script_name in scripts_to_run:
+        print(f"--> MENJALANKAN: {script_name}")
+        
+        result = subprocess.run([sys.executable, script_name], cwd=dapur_dir)
+
+        if result.returncode != 0:
+            print(
+                f"--> [ERROR] Skrip {script_name} berhenti dengan kesalahan (Code: {result.returncode})."
+            )
+            break
+
+    input("Program telah selesai di jalankan dan tekan enter untuk keluar.")
 
 
-if __name__ == "__main__":
-    jalankan_otomatisasi()
+if __name__ == '__main__':
+    main()
