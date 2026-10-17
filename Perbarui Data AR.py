@@ -12,7 +12,7 @@ def main():
     else:
         dapur_dir = os.path.join(current_dir, 'Dapur')
 
-    print("--> OTOMATISASI PEMBARUAN DATABASE AR SITUS")
+    print("--> === OTOMATISASI PEMBARUAN DATABASE AR SITUS ===")
 
     if not os.path.exists(dapur_dir):
         print(f"--> [ERROR] Folder '{dapur_dir}' tidak ditemukan!")
@@ -51,23 +51,21 @@ def main():
 
     print("--> [OK] Semua berkas persyaratan lengkap.")
 
-    source_files = ['Piutang.xls', 'Giro.xls']
-    missing_source_files = [
-        f for f in source_files if not os.path.exists(os.path.join(current_dir, f))
-    ]
-
-    if missing_source_files:
-        print("--> [ERROR] Berkas sumber berikut tidak ditemukan di folder utama:")
-        for mf in missing_source_files:
-            print(f"--> - {mf}")
+    piutang_path = os.path.join(current_dir, 'Piutang.xls')
+    if not os.path.exists(piutang_path):
+        print("--> [ERROR] Berkas wajib 'Piutang.xls' nggak ditemukan di folder utama!")
         input("Program telah selesai di jalankan dan tekan enter untuk keluar.")
         return
 
-    for f in source_files:
-        src = os.path.join(current_dir, f)
-        dst = os.path.join(dapur_dir, f)
-        shutil.copy2(src, dst)
-        print(f"--> [OK] Berhasil menyalin {f} ke folder Dapur.")
+    shutil.copy2(piutang_path, os.path.join(dapur_dir, 'Piutang.xls'))
+    print("--> [OK] Berhasil menyalin Piutang.xls ke folder Dapur.")
+
+    giro_path = os.path.join(current_dir, 'Giro.xls')
+    if os.path.exists(giro_path):
+        shutil.copy2(giro_path, os.path.join(dapur_dir, 'Giro.xls'))
+        print("--> [OK] Berhasil menyalin Giro.xls ke folder Dapur.")
+    else:
+        print("--> [INFO] Berkas opsional 'Giro.xls' nggak ditemukan, proses tetap dilanjutkan.")
 
     scripts_to_run = [
         '1_CleanerAcc.py',
