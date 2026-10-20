@@ -22,11 +22,18 @@
       box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
       border: 1px solid #cbd5e1;
       box-sizing: border-box;
+      color: #000000;
       page-break-after: always;
       page-break-inside: avoid;
     }
     .pdf-page:last-child {
       page-break-after: avoid !important;
+    }
+
+    .force-bold-all,
+    .force-bold-all * {
+      font-weight: 700 !important;
+      color: #000000 !important;
     }
 
     table.lht-header-info {
@@ -35,10 +42,15 @@
       margin-bottom: 6px;
       font-weight: bold;
       border-collapse: collapse;
+      color: #000000;
+      table-layout: fixed;
     }
     table.lht-header-info td {
       font-weight: bold;
       padding: 1px 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     table.lht-table {
@@ -47,10 +59,11 @@
       border-collapse: collapse;
       font-size: 9px;
       line-height: 1.15;
+      color: #000000;
     }
     table.lht-table th, table.lht-table td {
-      border: 1px solid #000;
-      padding: 3px 3px;
+      border: 1px solid #000000;
+      padding: 2px 3px;
       text-align: center;
       word-wrap: break-word;
       overflow-wrap: break-word;
@@ -73,6 +86,9 @@
         padding: 0 !important;
         margin: 0 !important;
         height: auto !important;
+        color: #000000 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
       }
       .no-print {
         display: none !important;
@@ -124,9 +140,9 @@
 </head>
 <body class="p-3 sm:p-6 text-gray-800">
 
-  <div class="max-w-7xl mx-auto space-y-6 print-wrapper">
+  <div class="max-w-7xl mx-auto space-y-5 print-wrapper">
     
-    <div class="no-print bg-blue-900 text-white rounded-2xl p-5 shadow-lg flex flex-col md:flex-row justify-between items-center gap-4">
+    <div class="no-print bg-blue-900 text-white rounded-2xl p-5 shadow-lg flex flex-col lg:flex-row justify-between items-center gap-4">
       <div>
         <h1 class="text-xl sm:text-2xl font-bold">📄 Pembuat Tagihan LHT</h1>
         <div class="flex flex-wrap items-center gap-2 mt-1">
@@ -136,14 +152,18 @@
           </span>
         </div>
       </div>
-      <div class="flex flex-wrap items-center gap-2">
+      <div class="flex flex-wrap items-center justify-center gap-2">
         <button onclick="handleSimpanOnly()" id="btnSimpan" class="btn-animated bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-2 rounded-xl text-xs shadow flex items-center gap-1.5">
           <span id="iconSimpan">💾</span>
           <span id="textSimpan">Simpan Spreadsheet</span>
         </button>
-        <button onclick="handleDirectPrint()" id="btnCetak" class="btn-animated bg-sky-600 hover:bg-sky-700 text-white font-bold px-3 py-2 rounded-xl text-xs shadow flex items-center gap-1.5">
+        <button onclick="handleDirectPrintBrowser()" id="btnCetakBrowser" title="Cetak langsung menggunakan dialog print browser" class="btn-animated bg-sky-600 hover:bg-sky-700 text-white font-bold px-3 py-2 rounded-xl text-xs shadow flex items-center gap-1.5">
           <span>🖨️</span>
-          <span>Cetak Langsung</span>
+          <span>Cetak Langsung (Browser)</span>
+        </button>
+        <button onclick="handleDirectPrintPDF()" id="btnCetakPDF" title="Cetak langsung menggunakan dokumen PDF Vektor presisi" class="btn-animated bg-teal-600 hover:bg-teal-700 text-white font-bold px-3 py-2 rounded-xl text-xs shadow flex items-center gap-1.5">
+          <span>🖨️</span>
+          <span>Cetak Langsung (PDF)</span>
         </button>
         <button onclick="handleDownloadPDFOnly()" id="btnUnduhPDF" class="btn-animated bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-3 py-2 rounded-xl text-xs shadow flex items-center gap-1.5">
           <span id="iconUnduhPDF">📄</span>
@@ -156,6 +176,130 @@
       </div>
     </div>
 
+    <div class="no-print bg-blue-50 rounded-2xl shadow-sm p-3.5 border border-blue-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-3 text-xs sm:text-sm">
+      <div class="flex flex-wrap items-center gap-3">
+        <label for="confPaperSize" class="font-bold text-blue-900">🖨️ Ukuran Kertas Cetak:</label>
+        <select id="confPaperSize" onchange="onPaperOrBoldChange()" class="border border-blue-300 rounded-xl px-3 py-1.5 bg-white font-semibold text-gray-800 focus:ring-2 focus:ring-blue-500">
+          <option value="letter" selected>Continuous Form / Letter (279 x 216 mm)</option>
+          <option value="a4">A4 Landscape (297 x 210 mm)</option>
+        </select>
+
+        <label for="forceAllBold" class="flex items-center gap-2 cursor-pointer bg-white px-3 py-1.5 rounded-xl border border-blue-300 shadow-sm hover:bg-blue-100 transition select-none">
+          <input type="checkbox" id="forceAllBold" checked onchange="onPaperOrBoldChange()" class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
+          <span class="font-bold text-blue-900">🔤 Paksa Semua Huruf Tebal (Bold)</span>
+        </label>
+      </div>
+
+      <button onclick="toggleAdvancePanel()" id="btnToggleAdvance" class="btn-animated bg-slate-800 hover:bg-slate-900 text-white font-bold px-3.5 py-2 rounded-xl text-xs shadow flex items-center gap-1.5">
+        <span>⚙️</span>
+        <span id="textToggleAdvance">Mode Advance (Tata Letak & Font)</span>
+      </button>
+    </div>
+
+    <div id="advanceSettingsPanel" class="no-print hidden bg-white rounded-2xl shadow-md p-5 border-2 border-slate-300 space-y-5 text-xs">
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b pb-3">
+        <div>
+          <h3 class="text-sm font-bold text-slate-800 flex items-center gap-1.5">
+            <span>⚙️ Pengaturan Advance: Tinggi Baris, Lebar Kolom & Ukuran Font</span>
+            <span class="bg-emerald-100 text-emerald-800 text-[10px] px-2 py-0.5 rounded-full font-semibold">Tersimpan Otomatis di Browser</span>
+          </h3>
+          <p class="text-[11px] text-gray-500 mt-0.5">Ubah ukuran tata letak sesuai kebutuhan cetak Anda. Pengaturan dapat diekspor/diimpor kembali kapan saja.</p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <button onclick="exportAdvancePreset()" class="btn-animated bg-blue-600 hover:bg-blue-700 text-white font-bold px-3 py-1.5 rounded-lg shadow-sm flex items-center gap-1">
+            <span>📤</span> <span>Ekspor Preset (.json)</span>
+          </button>
+          <button onclick="triggerImportPreset()" class="btn-animated bg-purple-600 hover:bg-purple-700 text-white font-bold px-3 py-1.5 rounded-lg shadow-sm flex items-center gap-1">
+            <span>📥</span> <span>Impor Preset (.json)</span>
+          </button>
+          <input type="file" id="importPresetFileInput" accept=".json" onchange="importAdvancePreset(event)" class="hidden">
+          <button onclick="resetAdvanceToDefault()" class="btn-animated bg-rose-600 hover:bg-rose-700 text-white font-bold px-3 py-1.5 rounded-lg shadow-sm flex items-center gap-1">
+            <span>🔄</span> <span>Reset ke Standar</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
+        <h4 class="font-bold text-blue-900 uppercase tracking-wider text-[11px] border-b border-slate-200 pb-1.5">
+          📌 Sesi 1: Judul & Informasi Header (Nama, Perusahaan, Divisi, Tanggal, Admin)
+        </h4>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div>
+            <label class="block font-semibold text-gray-700 mb-1">Font Judul Utama (px)</label>
+            <input type="number" step="0.5" id="adv_titleFontSize" onchange="saveAdvanceFromUI()" class="w-full border rounded-lg p-1.5 font-mono">
+          </div>
+          <div>
+            <label class="block font-semibold text-gray-700 mb-1">Tinggi Baris Judul (px)</label>
+            <input type="number" step="1" id="adv_titleHeight" onchange="saveAdvanceFromUI()" class="w-full border rounded-lg p-1.5 font-mono">
+          </div>
+          <div>
+            <label class="block font-semibold text-gray-700 mb-1">Font Info Header (px)</label>
+            <input type="number" step="0.5" id="adv_infoFontSize" onchange="saveAdvanceFromUI()" class="w-full border rounded-lg p-1.5 font-mono">
+          </div>
+          <div>
+            <label class="block font-semibold text-gray-700 mb-1">Tinggi Baris Info (px)</label>
+            <input type="number" step="1" id="adv_infoRowHeight" onchange="saveAdvanceFromUI()" class="w-full border rounded-lg p-1.5 font-mono">
+          </div>
+        </div>
+        <div>
+          <label class="block font-semibold text-gray-700 mb-1.5">Lebar Kolom Informasi Header (%):</label>
+          <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-8 gap-2" id="adv_infoColsContainer"></div>
+        </div>
+      </div>
+
+      <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
+        <h4 class="font-bold text-blue-900 uppercase tracking-wider text-[11px] border-b border-slate-200 pb-1.5">
+          📊 Sesi 2: Tabel Isian Data Faktur (15 Kolom)
+        </h4>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div>
+            <label class="block font-semibold text-gray-700 mb-1">Font Judul Kolom / TH (px)</label>
+            <input type="number" step="0.5" id="adv_thFontSize" onchange="saveAdvanceFromUI()" class="w-full border rounded-lg p-1.5 font-mono">
+          </div>
+          <div>
+            <label class="block font-semibold text-gray-700 mb-1">Tinggi Judul Kolom / TH (px)</label>
+            <input type="number" step="1" id="adv_thHeight" onchange="saveAdvanceFromUI()" class="w-full border rounded-lg p-1.5 font-mono">
+          </div>
+          <div>
+            <label class="block font-semibold text-gray-700 mb-1">Font Isi Data Faktur (px)</label>
+            <input type="number" step="0.5" id="adv_tdFontSize" onchange="saveAdvanceFromUI()" class="w-full border rounded-lg p-1.5 font-mono">
+          </div>
+          <div>
+            <label class="block font-semibold text-gray-700 mb-1">Tinggi Baris Data Faktur (px)</label>
+            <input type="number" step="1" id="adv_tdRowHeight" onchange="saveAdvanceFromUI()" class="w-full border rounded-lg p-1.5 font-mono">
+          </div>
+        </div>
+        <div>
+          <label class="block font-semibold text-gray-700 mb-1.5">Proporsi Lebar Masing-Masing Kolom Data (15 Kolom):</label>
+          <div class="grid grid-cols-3 sm:grid-cols-5 md:grid-cols-8 gap-2" id="adv_dataColsContainer"></div>
+        </div>
+      </div>
+
+      <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
+        <h4 class="font-bold text-blue-900 uppercase tracking-wider text-[11px] border-b border-slate-200 pb-1.5">
+          ✍️ Sesi 3: Kaki Tabel (TOTAL TAGIHAN, TOTAL BAYAR & TTD)
+        </h4>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div>
+            <label class="block font-semibold text-gray-700 mb-1">Font Baris TOTAL (px)</label>
+            <input type="number" step="0.5" id="adv_totalFontSize" onchange="saveAdvanceFromUI()" class="w-full border rounded-lg p-1.5 font-mono">
+          </div>
+          <div>
+            <label class="block font-semibold text-gray-700 mb-1">Tinggi Baris TOTAL (px)</label>
+            <input type="number" step="1" id="adv_totalRowHeight" onchange="saveAdvanceFromUI()" class="w-full border rounded-lg p-1.5 font-mono">
+          </div>
+          <div>
+            <label class="block font-semibold text-gray-700 mb-1">Font Baris TTD (px)</label>
+            <input type="number" step="0.5" id="adv_ttdFontSize" onchange="saveAdvanceFromUI()" class="w-full border rounded-lg p-1.5 font-mono">
+          </div>
+          <div>
+            <label class="block font-semibold text-gray-700 mb-1">Tinggi Kotak TTD (px)</label>
+            <input type="number" step="1" id="adv_ttdRowHeight" onchange="saveAdvanceFromUI()" class="w-full border rounded-lg p-1.5 font-mono">
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div class="no-print bg-white rounded-2xl shadow-sm p-5 border border-gray-200 grid grid-cols-2 md:grid-cols-6 gap-4 text-xs sm:text-sm">
       <div>
         <label class="block font-bold text-gray-700 mb-1">Nama Depo</label>
@@ -163,7 +307,7 @@
       </div>
       <div>
         <label class="block font-bold text-gray-700 mb-1">Penagih (Sales)</label>
-        <select id="confPenagih" onchange="updatePreviewOnly()" class="w-full border rounded-xl p-2 focus:ring-2 focus:ring-blue-500"></select>
+        <select id="confPenagih" onchange="onSalesOrDateChange()" class="w-full border rounded-xl p-2 focus:ring-2 focus:ring-blue-500"></select>
       </div>
       <div>
         <label class="block font-bold text-gray-700 mb-1">Perusahaan</label>
@@ -175,7 +319,7 @@
       </div>
       <div>
         <label class="block font-bold text-gray-700 mb-1">Tanggal</label>
-        <input type="date" id="confTanggal" onchange="updatePreviewOnly()" class="w-full border rounded-xl p-2 focus:ring-2 focus:ring-blue-500">
+        <input type="date" id="confTanggal" onchange="onSalesOrDateChange()" class="w-full border rounded-xl p-2 focus:ring-2 focus:ring-blue-500">
       </div>
       <div>
         <label class="block font-bold text-gray-700 mb-1">Admin</label>
@@ -184,12 +328,29 @@
     </div>
 
     <div class="no-print bg-white rounded-2xl shadow-sm p-5 border border-gray-200">
-      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-3">
-        <label class="font-bold text-gray-700 text-xs sm:text-sm">🔍 Pilih Pelanggan (Bisa Ceklist Beberapa Pelanggan):</label>
-        <div class="space-x-3 text-xs">
-          <button onclick="selectAllCustomers(true)" class="text-blue-600 font-bold hover:underline">Centang Semua</button>
+      <div class="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-3 mb-3">
+        <div class="flex flex-wrap items-center gap-2">
+          <label class="font-bold text-gray-700 text-xs sm:text-sm">🔍 Pilih Pelanggan (Bisa Ceklist Beberapa Pelanggan):</label>
+          <span id="smartFillBadge" class="bg-indigo-50 text-indigo-800 border border-indigo-200 px-2.5 py-0.5 rounded-lg text-[11px] font-semibold">
+            ✨ SmartFill: Menunggu data...
+          </span>
+        </div>
+        <div class="flex flex-wrap items-center gap-2.5 text-xs">
+          <div class="flex items-center gap-1.5 bg-gray-100 px-2.5 py-1 rounded-lg border border-gray-200">
+            <span class="font-semibold text-gray-600">Komposisi Minggu:</span>
+            <select id="smartFillWeekMode" onchange="onSalesOrDateChange()" class="bg-white border rounded px-1.5 py-0.5 font-bold text-blue-800">
+              <option value="auto" selected>Otomatis dari Tanggal</option>
+              <option value="Minggu 1">Paksa Minggu 1</option>
+              <option value="Minggu 2">Paksa Minggu 2</option>
+              <option value="Minggu 3">Paksa Minggu 3</option>
+              <option value="Minggu 4">Paksa Minggu 4</option>
+            </select>
+          </div>
+          <button onclick="applySmartFill(true)" class="text-indigo-600 font-bold hover:underline whitespace-nowrap" title="Terapkan ulang jadwal SmartFill">🔄 Terapkan SmartFill</button>
           <span class="text-gray-300">|</span>
-          <button onclick="selectAllCustomers(false)" class="text-red-500 font-bold hover:underline">Hapus Semua</button>
+          <button onclick="selectAllCustomers(true)" class="text-blue-600 font-bold hover:underline whitespace-nowrap">Centang Semua</button>
+          <span class="text-gray-300">|</span>
+          <button onclick="selectAllCustomers(false)" class="text-red-500 font-bold hover:underline whitespace-nowrap">Hapus Semua</button>
         </div>
       </div>
       <input type="text" id="custSearchInput" onkeyup="filterCustomerDropdown()" placeholder="Ketik nama atau kode pelanggan..." class="w-full border rounded-xl p-2.5 text-xs sm:text-sm mb-2">
@@ -213,14 +374,14 @@
         <table class="w-full text-xs text-center border-collapse">
           <thead class="bg-blue-900 text-white uppercase text-[10px]">
             <tr>
-              <th class="p-2.5"><input type="checkbox" id="checkAllRows" onchange="toggleCheckAllRows(this.checked)"></th>
+              <th class="p-2.5"><input type="checkbox" id="checkAllRows" checked onchange="toggleCheckAllRows(this.checked)"></th>
               <th class="p-2.5">No. Pelanggan</th>
               <th class="p-2.5">Nama Pelanggan</th>
-              <th class="p-2.5">No. Faktur</th>
-              <th class="p-2.5">Tgl. Faktur</th>
+              <th class="p-2.5 text-right">No. Faktur</th>
+              <th class="p-2.5 text-right">Tgl. Faktur</th>
               <th class="p-2.5">Umur</th>
-              <th class="p-2.5">Nilai Faktur</th>
-              <th class="p-2.5">Terhutang</th>
+              <th class="p-2.5 text-right">Nilai Faktur</th>
+              <th class="p-2.5 text-right">Terhutang</th>
             </tr>
           </thead>
           <tbody id="piutangTableBody" class="divide-y">
@@ -245,28 +406,287 @@
     let renderedFilteredItems = [];
     let customEmptyRowsCount = 0;
     let currentActiveItems = [];
+    let smartFillRules = [];
+    let isConfLoaded = false;
+    let isPiutangLoaded = false;
+
+    const STORAGE_KEY_ADVANCE = 'LHT_ADVANCE_SETTINGS_V1';
+
+    function safeStr(val) {
+      if (val === undefined || val === null) return '';
+      return String(val);
+    }
+
+    function safeNum(val, fallback) {
+      const n = Number(val);
+      return (!isNaN(n) && n > 0) ? n : fallback;
+    }
+
+    function getCustomerKey(no, nama) {
+      return safeStr(no).trim() + ' - ' + safeStr(nama).trim();
+    }
+
+    const INFO_COL_LABELS = [
+      'Label Nama', 'Isi Nama',
+      'Label Perusahaan', 'Isi Perusahaan',
+      'Label Divisi', 'Isi Divisi',
+      'Label Tgl/Admin', 'Isi Tgl/Admin'
+    ];
+
+    const DATA_COL_LABELS = [
+      '1. No.', '2. Kode', '3. Customer', '4. Umur', '5. No. Faktur',
+      '6. Tgl. Faktur', '7. Nilai Faktur', '8. Terbayar', '9. Terhutang',
+      '10. BG/Bank', '11. No. BG/Rek', '12. Tgl', '13. Nilai TF/BG',
+      '14. Nilai Tunai', '15. Ket'
+    ];
+
+    const DEFAULT_ADVANCE_CONFIG = {
+      paperSize: 'letter',
+      forceAllBold: true,
+      titleFontSize: 14,
+      titleHeight: 20,
+      infoFontSize: 9.5,
+      infoRowHeight: 16,
+      infoColWidths: [6, 24, 10, 18, 6, 10, 8, 18],
+      thFontSize: 8.5,
+      thHeight: 22,
+      tdFontSize: 9.0,
+      tdRowHeight: 20,
+      colWidths: [2.2, 5.1, 15.4, 3.1, 6.0, 6.6, 7.2, 7.2, 7.2, 5.1, 5.1, 3.1, 7.6, 7.6, 6.2],
+      totalFontSize: 9.0,
+      totalRowHeight: 20,
+      ttdFontSize: 9.0,
+      ttdRowHeight: 38
+    };
+
+    let advanceConfig = JSON.parse(JSON.stringify(DEFAULT_ADVANCE_CONFIG));
 
     window.onload = function() {
-      document.getElementById('confTanggal').valueAsDate = new Date();
+      const todayInput = document.getElementById('confTanggal');
+      if (todayInput) {
+        const now = new Date();
+        const yyyy = now.getFullYear();
+        const mm = ('0' + (now.getMonth() + 1)).slice(-2);
+        const dd = ('0' + now.getDate()).slice(-2);
+        todayInput.value = yyyy + '-' + mm + '-' + dd;
+      }
+      loadAdvanceFromStorage();
+      buildAdvanceInputsUI();
+      syncAdvanceConfigToUI();
       loadConfData();
       loadPiutangData();
     };
 
+    function toggleAdvancePanel() {
+      const panel = document.getElementById('advanceSettingsPanel');
+      panel.classList.toggle('hidden');
+    }
+
+    function loadAdvanceFromStorage() {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY_ADVANCE);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          advanceConfig = mergeAdvanceConfig(DEFAULT_ADVANCE_CONFIG, parsed);
+        }
+      } catch (e) {
+        console.warn('Gagal memuat pengaturan dari localStorage:', e);
+      }
+    }
+
+    function mergeAdvanceConfig(defaults, source) {
+      const result = JSON.parse(JSON.stringify(defaults));
+      if (!source || typeof source !== 'object') return result;
+
+      Object.keys(defaults).forEach(function(key) {
+        if (source[key] !== undefined) {
+          if (Array.isArray(defaults[key])) {
+            if (Array.isArray(source[key]) && source[key].length === defaults[key].length) {
+              result[key] = source[key].map(function(v, i) {
+                return safeNum(v, defaults[key][i]);
+              });
+            }
+          } else if (typeof defaults[key] === 'boolean') {
+            result[key] = Boolean(source[key]);
+          } else if (typeof defaults[key] === 'number') {
+            result[key] = safeNum(source[key], defaults[key]);
+          } else {
+            result[key] = safeStr(source[key]);
+          }
+        }
+      });
+      return result;
+    }
+
+    function buildAdvanceInputsUI() {
+      const infoContainer = document.getElementById('adv_infoColsContainer');
+      infoContainer.innerHTML = '';
+      INFO_COL_LABELS.forEach(function(label, idx) {
+        const div = document.createElement('div');
+        div.innerHTML = '<label class="block text-[10px] text-gray-600 truncate" title="' + label + '">' + label + '</label>' +
+          '<input type="number" step="0.5" id="adv_infoCol_' + idx + '" onchange="saveAdvanceFromUI()" class="w-full border rounded p-1 font-mono text-xs">';
+        infoContainer.appendChild(div);
+      });
+
+      const dataContainer = document.getElementById('adv_dataColsContainer');
+      dataContainer.innerHTML = '';
+      DATA_COL_LABELS.forEach(function(label, idx) {
+        const div = document.createElement('div');
+        div.innerHTML = '<label class="block text-[10px] text-gray-600 truncate" title="' + label + '">' + label + '</label>' +
+          '<input type="number" step="0.1" id="adv_dataCol_' + idx + '" onchange="saveAdvanceFromUI()" class="w-full border rounded p-1 font-mono text-xs">';
+        dataContainer.appendChild(div);
+      });
+    }
+
+    function syncAdvanceConfigToUI() {
+      document.getElementById('confPaperSize').value = advanceConfig.paperSize ? advanceConfig.paperSize : 'letter';
+      document.getElementById('forceAllBold').checked = Boolean(advanceConfig.forceAllBold);
+
+      document.getElementById('adv_titleFontSize').value = advanceConfig.titleFontSize;
+      document.getElementById('adv_titleHeight').value = advanceConfig.titleHeight;
+      document.getElementById('adv_infoFontSize').value = advanceConfig.infoFontSize;
+      document.getElementById('adv_infoRowHeight').value = advanceConfig.infoRowHeight;
+
+      advanceConfig.infoColWidths.forEach(function(val, idx) {
+        const el = document.getElementById('adv_infoCol_' + idx);
+        if (el) el.value = val;
+      });
+
+      document.getElementById('adv_thFontSize').value = advanceConfig.thFontSize;
+      document.getElementById('adv_thHeight').value = advanceConfig.thHeight;
+      document.getElementById('adv_tdFontSize').value = advanceConfig.tdFontSize;
+      document.getElementById('adv_tdRowHeight').value = advanceConfig.tdRowHeight;
+
+      advanceConfig.colWidths.forEach(function(val, idx) {
+        const el = document.getElementById('adv_dataCol_' + idx);
+        if (el) el.value = val;
+      });
+
+      document.getElementById('adv_totalFontSize').value = advanceConfig.totalFontSize;
+      document.getElementById('adv_totalRowHeight').value = advanceConfig.totalRowHeight;
+      document.getElementById('adv_ttdFontSize').value = advanceConfig.ttdFontSize;
+      document.getElementById('adv_ttdRowHeight').value = advanceConfig.ttdRowHeight;
+    }
+
+    function onPaperOrBoldChange() {
+      advanceConfig.paperSize = document.getElementById('confPaperSize').value;
+      advanceConfig.forceAllBold = document.getElementById('forceAllBold').checked;
+      persistAdvanceConfig();
+      updatePreviewOnly();
+    }
+
+    function saveAdvanceFromUI() {
+      advanceConfig.paperSize = document.getElementById('confPaperSize').value;
+      advanceConfig.forceAllBold = document.getElementById('forceAllBold').checked;
+
+      advanceConfig.titleFontSize = safeNum(document.getElementById('adv_titleFontSize').value, DEFAULT_ADVANCE_CONFIG.titleFontSize);
+      advanceConfig.titleHeight = safeNum(document.getElementById('adv_titleHeight').value, DEFAULT_ADVANCE_CONFIG.titleHeight);
+      advanceConfig.infoFontSize = safeNum(document.getElementById('adv_infoFontSize').value, DEFAULT_ADVANCE_CONFIG.infoFontSize);
+      advanceConfig.infoRowHeight = safeNum(document.getElementById('adv_infoRowHeight').value, DEFAULT_ADVANCE_CONFIG.infoRowHeight);
+
+      advanceConfig.infoColWidths = INFO_COL_LABELS.map(function(_, idx) {
+        return safeNum(document.getElementById('adv_infoCol_' + idx).value, DEFAULT_ADVANCE_CONFIG.infoColWidths[idx]);
+      });
+
+      advanceConfig.thFontSize = safeNum(document.getElementById('adv_thFontSize').value, DEFAULT_ADVANCE_CONFIG.thFontSize);
+      advanceConfig.thHeight = safeNum(document.getElementById('adv_thHeight').value, DEFAULT_ADVANCE_CONFIG.thHeight);
+      advanceConfig.tdFontSize = safeNum(document.getElementById('adv_tdFontSize').value, DEFAULT_ADVANCE_CONFIG.tdFontSize);
+      advanceConfig.tdRowHeight = safeNum(document.getElementById('adv_tdRowHeight').value, DEFAULT_ADVANCE_CONFIG.tdRowHeight);
+
+      advanceConfig.colWidths = DATA_COL_LABELS.map(function(_, idx) {
+        return safeNum(document.getElementById('adv_dataCol_' + idx).value, DEFAULT_ADVANCE_CONFIG.colWidths[idx]);
+      });
+
+      advanceConfig.totalFontSize = safeNum(document.getElementById('adv_totalFontSize').value, DEFAULT_ADVANCE_CONFIG.totalFontSize);
+      advanceConfig.totalRowHeight = safeNum(document.getElementById('adv_totalRowHeight').value, DEFAULT_ADVANCE_CONFIG.totalRowHeight);
+      advanceConfig.ttdFontSize = safeNum(document.getElementById('adv_ttdFontSize').value, DEFAULT_ADVANCE_CONFIG.ttdFontSize);
+      advanceConfig.ttdRowHeight = safeNum(document.getElementById('adv_ttdRowHeight').value, DEFAULT_ADVANCE_CONFIG.ttdRowHeight);
+
+      persistAdvanceConfig();
+      updatePreviewOnly();
+    }
+
+    function persistAdvanceConfig() {
+      try {
+        localStorage.setItem(STORAGE_KEY_ADVANCE, JSON.stringify(advanceConfig));
+      } catch (e) {
+        console.warn('Gagal menyimpan ke localStorage:', e);
+      }
+    }
+
+    function resetAdvanceToDefault() {
+      if (!confirm('Kembalikan semua pengaturan tinggi, lebar kolom, dan ukuran font ke standar awal?')) return;
+      advanceConfig = JSON.parse(JSON.stringify(DEFAULT_ADVANCE_CONFIG));
+      persistAdvanceConfig();
+      syncAdvanceConfigToUI();
+      updatePreviewOnly();
+    }
+
+    function exportAdvancePreset() {
+      const dataStr = JSON.stringify(advanceConfig, null, 2);
+      const blob = new Blob([dataStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'Preset_Pengaturan_LHT.json';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    function triggerImportPreset() {
+      document.getElementById('importPresetFileInput').click();
+    }
+
+    function importAdvancePreset(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const imported = JSON.parse(e.target.result);
+          advanceConfig = mergeAdvanceConfig(DEFAULT_ADVANCE_CONFIG, imported);
+          persistAdvanceConfig();
+          syncAdvanceConfigToUI();
+          updatePreviewOnly();
+          alert('Preset pengaturan berhasil diimpor dan diterapkan!');
+        } catch (err) {
+          alert('File preset tidak valid: ' + err.message);
+        }
+        event.target.value = '';
+      };
+      reader.readAsText(file);
+    }
+
     function loadConfData() {
-      google.script.run.withSuccessHandler(function(res) {
-        if (!res.success) return alert(res.message);
-        populateSelect('confAdmin', res.admins);
-        populateSelect('confPenagih', res.penagihs);
-        populateSelect('confDepo', res.depos);
-        populateSelect('confPerusahaan', res.perusahaans);
-        populateSelect('confDivisi', res.divisis);
-      }).getConfData();
+      google.script.run
+        .withSuccessHandler(function(res) {
+          if (!res || !res.success) {
+            return alert(res ? res.message : 'Gagal memuat konfigurasi dari server.');
+          }
+          populateSelect('confAdmin', res.admins);
+          populateSelect('confPenagih', res.penagihs);
+          populateSelect('confDepo', res.depos);
+          populateSelect('confPerusahaan', res.perusahaans);
+          populateSelect('confDivisi', res.divisis);
+
+          smartFillRules = Array.isArray(res.smartFillRules) ? res.smartFillRules : [];
+          isConfLoaded = true;
+          checkInitialSmartFill();
+        })
+        .withFailureHandler(function(err) {
+          alert('Gagal mengambil data konfigurasi: ' + err.message);
+        })
+        .getConfData();
     }
 
     function populateSelect(id, items) {
       const el = document.getElementById(id);
+      if (!el) return;
       el.innerHTML = '';
-      items.forEach(item => {
+      const list = Array.isArray(items) ? items : [];
+      list.forEach(function(item) {
         const opt = document.createElement('option');
         opt.value = item;
         opt.textContent = item;
@@ -275,67 +695,175 @@
     }
 
     function loadPiutangData() {
-      google.script.run.withSuccessHandler(function(res) {
-        if (!res.success) return alert(res.message);
-        rawPiutangData = res.items || [];
-        
-        const badgeEl = document.getElementById('badgeWaktuPembaruan');
-        if (res.waktuPembaruan) {
-          badgeEl.innerHTML = `🕒 Data diperbarui: <b>${res.waktuPembaruan}</b>`;
-        } else {
-          badgeEl.innerHTML = `🕒 Data diperbarui: -`;
-        }
-
-        const custMap = new Map();
-        rawPiutangData.forEach(item => {
-          const key = `${item.noPelanggan} - ${item.namaPelanggan}`;
-          if (!custMap.has(key)) {
-            custMap.set(key, { no: item.noPelanggan, nama: item.namaPelanggan, key: key });
+      google.script.run
+        .withSuccessHandler(function(res) {
+          if (!res || !res.success) {
+            return alert(res ? res.message : 'Gagal memuat data piutang.');
           }
-        });
-        customerList = Array.from(custMap.values());
+          rawPiutangData = Array.isArray(res.items) ? res.items : [];
+          
+          const badgeEl = document.getElementById('badgeWaktuPembaruan');
+          if (res.waktuPembaruan) {
+            badgeEl.innerHTML = '🕒 Data diperbarui: <b>' + safeStr(res.waktuPembaruan) + '</b>';
+          } else {
+            badgeEl.innerHTML = '🕒 Data diperbarui: -';
+          }
+
+          const custMap = new Map();
+          rawPiutangData.forEach(function(item) {
+            const key = getCustomerKey(item.noPelanggan, item.namaPelanggan);
+            if (!custMap.has(key)) {
+              custMap.set(key, {
+                no: safeStr(item.noPelanggan).trim(),
+                nama: safeStr(item.namaPelanggan).trim(),
+                key: key
+              });
+            }
+          });
+          customerList = Array.from(custMap.values());
+          isPiutangLoaded = true;
+          renderCustomerDropdown();
+          checkInitialSmartFill();
+        })
+        .withFailureHandler(function(err) {
+          alert('Gagal mengambil data piutang: ' + err.message);
+        })
+        .getPiutangData();
+    }
+
+    function checkInitialSmartFill() {
+      if (isConfLoaded && isPiutangLoaded) {
+        applySmartFill(false);
+      }
+    }
+
+    function onSalesOrDateChange() {
+      applySmartFill(false);
+      updatePreviewOnly();
+    }
+
+    function getMingguAndHariFromDate(dateStr) {
+      if (!dateStr) return { minggu: 'Minggu 1', hari: 'Senin' };
+      const parts = dateStr.split('-');
+      const dt = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+      if (isNaN(dt.getTime())) return { minggu: 'Minggu 1', hari: 'Senin' };
+
+      const dayNames = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', "Jum'at", 'Sabtu'];
+      const hari = dayNames[dt.getDay()];
+
+      const dayOfMonth = dt.getDate();
+      const weekNum = Math.min(4, Math.ceil(dayOfMonth / 7));
+      const minggu = 'Minggu ' + weekNum;
+
+      return { minggu: minggu, hari: hari };
+    }
+
+    function normalizeHariClient(str) {
+      if (!str) return '';
+      const clean = safeStr(str).trim().toLowerCase().replace(/['’`]/g, '');
+      if (clean === 'jumat') return 'jumat';
+      return clean;
+    }
+
+    function applySmartFill(showAlertIfEmpty) {
+      const penagih = safeStr(document.getElementById('confPenagih').value).trim();
+      const tanggalVal = document.getElementById('confTanggal').value;
+      const weekMode = document.getElementById('smartFillWeekMode').value;
+      const badge = document.getElementById('smartFillBadge');
+
+      const calc = getMingguAndHariFromDate(tanggalVal);
+      const targetMinggu = (weekMode === 'auto') ? calc.minggu : weekMode;
+      const targetHari = calc.hari;
+
+      if (!smartFillRules || smartFillRules.length === 0) {
+        badge.innerHTML = '✨ SmartFill: Jadwal di sheet conf kosong (' + targetMinggu + ' - ' + targetHari + ')';
         renderCustomerDropdown();
         renderPiutangTable();
-      }).getPiutangData();
+        return;
+      }
+
+      const matchedCodes = new Set();
+      smartFillRules.forEach(function(rule) {
+        const isSameSales = safeStr(rule.penagih).toLowerCase() === penagih.toLowerCase();
+        const isSameMinggu = safeStr(rule.minggu).toLowerCase() === targetMinggu.toLowerCase();
+        const isSameHari = normalizeHariClient(rule.hari) === normalizeHariClient(targetHari);
+
+        if (isSameSales && isSameMinggu && isSameHari) {
+          const codes = Array.isArray(rule.customerCodes) ? rule.customerCodes : [];
+          codes.forEach(function(code) {
+            matchedCodes.add(safeStr(code).trim().toLowerCase());
+          });
+        }
+      });
+
+      selectedCustomerKeys.clear();
+      let matchedCustomerCount = 0;
+
+      if (matchedCodes.size > 0) {
+        customerList.forEach(function(cust) {
+          if (matchedCodes.has(safeStr(cust.no).trim().toLowerCase())) {
+            selectedCustomerKeys.add(cust.key);
+            matchedCustomerCount++;
+          }
+        });
+        badge.innerHTML = '✨ SmartFill Aktif: <b>' + penagih + '</b> • <b>' + targetMinggu + ', ' + targetHari + '</b> (' + matchedCustomerCount + ' Pelanggan tercentang)';
+      } else {
+        badge.innerHTML = '✨ SmartFill: <b>' + penagih + '</b> • <b>' + targetMinggu + ', ' + targetHari + '</b> (Tidak ada rute terjadwal)';
+        if (showAlertIfEmpty) {
+          alert('Tidak ditemukan jadwal SmartFill untuk Sales "' + penagih + '" pada ' + targetMinggu + ' hari ' + targetHari + '.');
+        }
+      }
+
+      renderCustomerDropdown();
+      renderPiutangTable();
     }
 
     function renderCustomerDropdown() {
       const container = document.getElementById('customerListContainer');
       container.innerHTML = '';
+      const searchInput = document.getElementById('custSearchInput');
+      const searchQ = safeStr(searchInput ? searchInput.value : '').toLowerCase();
       
-      customerList.forEach((cust, idx) => {
+      customerList.forEach(function(cust, idx) {
+        const isVisible = cust.key.toLowerCase().indexOf(searchQ) !== -1;
+        const isChecked = selectedCustomerKeys.has(cust.key) ? 'checked' : '';
         const div = document.createElement('div');
         div.className = 'flex items-center space-x-2 p-1.5 hover:bg-white rounded border border-transparent hover:border-gray-200';
-        div.innerHTML = `
-          <input type="checkbox" id="cust_${idx}" ${selectedCustomerKeys.has(cust.key) ? 'checked' : ''} onchange="toggleCustomerSelect('${cust.key}', this.checked)" class="rounded text-blue-600">
-          <label for="cust_${idx}" class="text-xs font-medium cursor-pointer truncate">${cust.key}</label>
-        `;
+        div.style.display = isVisible ? 'flex' : 'none';
+        div.innerHTML = '<input type="checkbox" id="cust_' + idx + '" ' + isChecked + ' onchange="toggleCustomerSelectByIdx(' + idx + ', this.checked)" class="rounded text-blue-600">' +
+          '<label for="cust_' + idx + '" class="text-xs font-medium cursor-pointer truncate">' + cust.key + '</label>';
         container.appendChild(div);
       });
     }
 
     function filterCustomerDropdown() {
-      const q = document.getElementById('custSearchInput').value.toLowerCase();
+      const q = safeStr(document.getElementById('custSearchInput').value).toLowerCase();
       const container = document.getElementById('customerListContainer');
       const children = container.children;
-      customerList.forEach((cust, i) => {
-        if (cust.key.toLowerCase().includes(q)) {
-          children[i].style.display = 'flex';
-        } else {
-          children[i].style.display = 'none';
+      customerList.forEach(function(cust, i) {
+        if (children[i]) {
+          children[i].style.display = (cust.key.toLowerCase().indexOf(q) !== -1) ? 'flex' : 'none';
         }
       });
     }
 
-    function toggleCustomerSelect(key, isChecked) {
-      if (isChecked) selectedCustomerKeys.add(key);
-      else selectedCustomerKeys.delete(key);
+    function toggleCustomerSelectByIdx(idx, isChecked) {
+      if (!customerList[idx]) return;
+      const key = customerList[idx].key;
+      if (isChecked) {
+        selectedCustomerKeys.add(key);
+      } else {
+        selectedCustomerKeys.delete(key);
+      }
       renderPiutangTable();
     }
 
     function selectAllCustomers(status) {
-      if (status) selectedCustomerKeys = new Set(customerList.map(c => c.key));
-      else selectedCustomerKeys.clear();
+      if (status) {
+        selectedCustomerKeys = new Set(customerList.map(function(c) { return c.key; }));
+      } else {
+        selectedCustomerKeys.clear();
+      }
       renderCustomerDropdown();
       renderPiutangTable();
     }
@@ -344,32 +872,34 @@
       const tbody = document.getElementById('piutangTableBody');
       tbody.innerHTML = '';
 
-      renderedFilteredItems = rawPiutangData.filter(item => {
-        const key = `${item.noPelanggan} - ${item.namaPelanggan}`;
+      renderedFilteredItems = rawPiutangData.filter(function(item) {
+        const key = getCustomerKey(item.noPelanggan, item.namaPelanggan);
         return selectedCustomerKeys.has(key);
       });
 
       if (renderedFilteredItems.length === 0 && customEmptyRowsCount === 0) {
         tbody.innerHTML = '<tr><td colspan="8" class="p-6 text-gray-400">Silakan centang pelanggan di atas untuk menampilkan faktur.</td></tr>';
+        currentActiveItems = [];
         renderPDFPreview([]);
         return;
       }
 
-      renderedFilteredItems.forEach((item, idx) => {
+      renderedFilteredItems.forEach(function(item, idx) {
         const tr = document.createElement('tr');
         tr.className = 'hover:bg-blue-50 transition';
-        tr.innerHTML = `
-          <td class="p-2"><input type="checkbox" class="row-cb" data-idx="${idx}" checked onchange="updateCheckedRows()"></td>
-          <td class="p-2">${item.noPelanggan}</td>
-          <td class="p-2 font-semibold text-left">${item.namaPelanggan}</td>
-          <td class="p-2 font-medium">${item.noFaktur}</td>
-          <td class="p-2">${item.tglFaktur}</td>
-          <td class="p-2 text-red-600 font-bold">${item.umur}</td>
-          <td class="p-2">Rp ${formatRupiah(item.nilaiFaktur)}</td>
-          <td class="p-2 font-bold text-blue-900">Rp ${formatRupiah(item.sisaPiutang)}</td>
-        `;
+        tr.innerHTML = '<td class="p-2"><input type="checkbox" class="row-cb" data-idx="' + idx + '" checked onchange="updateCheckedRows()"></td>' +
+          '<td class="p-2">' + safeStr(item.noPelanggan) + '</td>' +
+          '<td class="p-2 font-semibold text-left">' + safeStr(item.namaPelanggan) + '</td>' +
+          '<td class="p-2 font-medium text-right">' + safeStr(item.noFaktur) + '</td>' +
+          '<td class="p-2 text-right">' + safeStr(item.tglFaktur) + '</td>' +
+          '<td class="p-2 text-red-600 font-bold">' + safeStr(item.umur) + '</td>' +
+          '<td class="p-2 text-right">Rp ' + formatRupiah(item.nilaiFaktur) + '</td>' +
+          '<td class="p-2 font-bold text-blue-900 text-right">Rp ' + formatRupiah(item.sisaPiutang) + '</td>';
         tbody.appendChild(tr);
       });
+
+      const checkAllEl = document.getElementById('checkAllRows');
+      if (checkAllEl) checkAllEl.checked = true;
 
       updateCheckedRows();
     }
@@ -388,7 +918,7 @@
 
     function toggleCheckAllRows(status) {
       const cbs = document.querySelectorAll('.row-cb');
-      cbs.forEach(cb => cb.checked = status);
+      cbs.forEach(function(cb) { cb.checked = status; });
       updateCheckedRows();
     }
 
@@ -396,9 +926,9 @@
       const cbs = document.querySelectorAll('.row-cb');
       const activeItems = [];
       
-      cbs.forEach(cb => {
+      cbs.forEach(function(cb) {
         if (cb.checked) {
-          const idx = parseInt(cb.getAttribute('data-idx'));
+          const idx = parseInt(cb.getAttribute('data-idx'), 10);
           if (renderedFilteredItems[idx]) {
             activeItems.push(renderedFilteredItems[idx]);
           }
@@ -428,19 +958,20 @@
     }
 
     function formatDateDMY(val) {
-      if (!val) return '';
-      if (val.indexOf('-') !== -1) {
-        const parts = val.split('-');
-        if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
+      const str = safeStr(val);
+      if (!str) return '';
+      if (str.indexOf('-') !== -1) {
+        const parts = str.split('-');
+        if (parts.length === 3) return parts[2] + '/' + parts[1] + '/' + parts[0];
       }
-      return val;
+      return str;
     }
 
     function renderPDFPreview(items) {
       const container = document.getElementById('pdfPrintArea');
       container.innerHTML = '';
 
-      if (items.length === 0) {
+      if (!items || items.length === 0) {
         container.innerHTML = '<div class="no-print bg-white p-8 rounded-xl border text-center text-gray-400">Belum ada data piutang terpilih.</div>';
         return;
       }
@@ -450,141 +981,128 @@
         pagesData.push(items.slice(i, i + 17));
       }
 
-      const depo = document.getElementById('confDepo').value || 'SULAWESI';
-      const penagih = document.getElementById('confPenagih').value || '';
-      const perusahaan = document.getElementById('confPerusahaan').value || '';
-      const divisi = document.getElementById('confDivisi').value || '';
-      const admin = document.getElementById('confAdmin').value || '';
-      const tanggalRaw = document.getElementById('confTanggal').value || '';
+      const depoVal = safeStr(document.getElementById('confDepo').value);
+      const depo = depoVal ? depoVal : 'SULAWESI';
+      const penagih = safeStr(document.getElementById('confPenagih').value);
+      const perusahaan = safeStr(document.getElementById('confPerusahaan').value);
+      const divisi = safeStr(document.getElementById('confDivisi').value);
+      const admin = safeStr(document.getElementById('confAdmin').value);
+      const tanggalRaw = safeStr(document.getElementById('confTanggal').value);
       const tanggalFormatted = formatDateDMY(tanggalRaw);
+      const isForceBold = document.getElementById('forceAllBold').checked;
 
-      pagesData.forEach((pageItems, pIdx) => {
+      const sumInfo = advanceConfig.infoColWidths.reduce(function(a, b) { return a + b; }, 0);
+      const totalInfoWeight = sumInfo > 0 ? sumInfo : 100;
+      const infoPct = advanceConfig.infoColWidths.map(function(w) {
+        return ((w / totalInfoWeight) * 100).toFixed(2) + '%';
+      });
+
+      const sumData = advanceConfig.colWidths.reduce(function(a, b) { return a + b; }, 0);
+      const totalDataWeight = sumData > 0 ? sumData : 100;
+      const dataPct = advanceConfig.colWidths.map(function(w) {
+        return ((w / totalDataWeight) * 100).toFixed(2) + '%';
+      });
+
+      pagesData.forEach(function(pageItems, pIdx) {
         let totalNilai = 0, totalTerbayar = 0, totalTerhutang = 0;
-
         let rowsHtml = '';
-        pageItems.forEach((item, rIdx) => {
-          totalNilai += item.nilaiFaktur || 0;
-          totalTerbayar += item.terbayar || 0;
-          totalTerhutang += item.sisaPiutang || 0;
 
-          const terbayarVal = item.isRowEmpty 
-            ? '' 
-            : (item.terbayar > 0 ? formatRupiah(item.terbayar) : '');
+        pageItems.forEach(function(item, rIdx) {
+          const nFaktur = Number(item.nilaiFaktur) ? Number(item.nilaiFaktur) : 0;
+          const nTerbayar = Number(item.terbayar) ? Number(item.terbayar) : 0;
+          const nSisa = Number(item.sisaPiutang) ? Number(item.sisaPiutang) : 0;
 
-          const nilaiFakturVal = item.isRowEmpty 
-            ? '' 
-            : (item.nilaiFaktur ? formatRupiah(item.nilaiFaktur) : '');
+          totalNilai += nFaktur;
+          totalTerbayar += nTerbayar;
+          totalTerhutang += nSisa;
 
-          const terhutangVal = item.isRowEmpty 
-            ? '' 
-            : (item.sisaPiutang ? formatRupiah(item.sisaPiutang) : '');
+          const noUrut = item.isRowEmpty ? '' : String(pIdx * 17 + rIdx + 1);
+          const kodePel = item.isRowEmpty ? '' : safeStr(item.noPelanggan);
+          const namaPel = item.isRowEmpty ? '' : safeStr(item.namaPelanggan);
+          const umurVal = item.isRowEmpty ? '' : safeStr(item.umur);
+          const noFak = item.isRowEmpty ? '' : safeStr(item.noFaktur);
+          const tglFak = item.isRowEmpty ? '' : safeStr(item.tglFaktur);
+          const nilaiFakturVal = item.isRowEmpty ? '' : (nFaktur > 0 ? formatRupiah(nFaktur) : '');
+          const terbayarVal = item.isRowEmpty ? '' : (nTerbayar > 0 ? formatRupiah(nTerbayar) : '');
+          const terhutangVal = item.isRowEmpty ? '' : (nSisa > 0 ? formatRupiah(nSisa) : '');
 
-          rowsHtml += `
-            <tr style="height:20px;">
-              <td>${item.isRowEmpty ? '' : (pIdx * 17 + rIdx + 1)}</td>
-              <td>${item.noPelanggan || ''}</td>
-              <td style="text-align:left; font-weight:600; padding-left:3px;">${item.namaPelanggan || ''}</td>
-              <td>${item.isRowEmpty ? '' : (item.umur !== undefined ? item.umur : '')}</td>
-              <td>${item.noFaktur || ''}</td>
-              <td>${item.tglFaktur || ''}</td>
-              <td style="text-align:right; padding-right:4px;">${nilaiFakturVal}</td>
-              <td style="text-align:right; padding-right:4px;">${terbayarVal}</td>
-              <td style="text-align:right; padding-right:4px;">${terhutangVal}</td>
-              <td></td>
-              <td></td>
-              <td></td>
-              <td></td>
-              <td></td>
-              <td></td>
-            </tr>
-          `;
+          const rowWeightStyle = isForceBold ? 'font-weight:700;' : '';
+
+          rowsHtml += '<tr style="height:' + advanceConfig.tdRowHeight + 'px; font-size:' + advanceConfig.tdFontSize + 'px; ' + rowWeightStyle + '">' +
+            '<td>' + noUrut + '</td>' +
+            '<td>' + kodePel + '</td>' +
+            '<td style="text-align:left; font-weight:700; padding-left:4px;">' + namaPel + '</td>' +
+            '<td>' + umurVal + '</td>' +
+            '<td style="text-align:right; padding-right:4px;">' + noFak + '</td>' +
+            '<td style="text-align:right; padding-right:4px;">' + tglFak + '</td>' +
+            '<td style="text-align:right; padding-right:4px;">' + nilaiFakturVal + '</td>' +
+            '<td style="text-align:right; padding-right:4px;">' + terbayarVal + '</td>' +
+            '<td style="text-align:right; padding-right:4px;">' + terhutangVal + '</td>' +
+            '<td></td><td></td><td></td><td></td><td></td><td></td>' +
+          '</tr>';
         });
 
+        const infoColgroupHtml = infoPct.map(function(pct) { return '<col style="width:' + pct + ';">'; }).join('');
+        const dataColgroupHtml = dataPct.map(function(pct) { return '<col style="width:' + pct + ';">'; }).join('');
+
         const pageDiv = document.createElement('div');
-        pageDiv.className = 'pdf-page';
-        pageDiv.innerHTML = `
-          <div style="text-align:center; font-weight:bold; font-size:14px; margin-bottom:6px; height:20px;">
-            LAPORAN HASIL TAGIHAN DEPO ${depo}
-          </div>
-
-          <table class="lht-header-info">
-            <tr>
-              <td style="width:6%;">Nama</td>
-              <td style="width:24%;">: ${penagih}</td>
-              <td style="width:10%;">Perusahaan</td>
-              <td style="width:18%;">: ${perusahaan}</td>
-              <td style="width:6%;">Divisi</td>
-              <td style="width:10%;">: ${divisi}</td>
-              <td style="width:8%;">Tanggal</td>
-              <td>: ${tanggalFormatted}</td>
-            </tr>
-            <tr>
-              <td colspan="6"></td>
-              <td>Di input oleh</td>
-              <td>: ${admin}</td>
-            </tr>
-          </table>
-
-          <table class="lht-table">
-            <colgroup>
-              <col style="width: 2.2%;">
-              <col style="width: 5.1%;">
-              <col style="width: 15.4%;">
-              <col style="width: 3.1%;">
-              <col style="width: 6.0%;">
-              <col style="width: 6.6%;">
-              <col style="width: 7.2%;">
-              <col style="width: 7.2%;">
-              <col style="width: 7.2%;">
-              <col style="width: 5.1%;">
-              <col style="width: 5.1%;">
-              <col style="width: 3.1%;">
-              <col style="width: 7.6%;">
-              <col style="width: 7.6%;">
-              <col style="width: 6.2%;">
-            </colgroup>
-            <thead>
-              <tr>
-                <th>No.</th>
-                <th>Kode</th>
-                <th>Customer</th>
-                <th>Umur</th>
-                <th>No. Faktur</th>
-                <th>Tgl. Faktur</th>
-                <th>Nilai Faktur</th>
-                <th>Terbayar</th>
-                <th>Terhutang</th>
-                <th>BG / Bank</th>
-                <th>No. BG / Rek.</th>
-                <th>Tgl</th>
-                <th>Nilai TF/BG</th>
-                <th>Nilai Tunai</th>
-                <th>Ket</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${rowsHtml}
-            </tbody>
-            <tfoot>
-              <tr style="font-weight:bold; height:20px;">
-                <td colspan="6" style="text-align:right; padding-right:6px;">TOTAL TAGIHAN</td>
-                <td style="text-align:right; padding-right:4px;">${formatRupiah(totalNilai)}</td>
-                <td style="text-align:right; padding-right:4px;">${formatRupiah(totalTerbayar)}</td>
-                <td style="text-align:right; padding-right:4px;">${formatRupiah(totalTerhutang)}</td>
-                <td colspan="3" style="text-align:center;">TOTAL BAYAR</td>
-                <td></td>
-                <td></td>
-                <td></td>
-              </tr>
-              <tr style="font-weight:bold; height:38px;">
-                <td colspan="9" style="text-align:right; vertical-align:middle; padding-right:6px;">TTD SALES & COLLECTOR</td>
-                <td colspan="2"></td>
-                <td colspan="2" style="text-align:center; vertical-align:middle;">TGL & TTD ADMIN</td>
-                <td colspan="2"></td>
-              </tr>
-            </tfoot>
-          </table>
-        `;
+        pageDiv.className = 'pdf-page' + (isForceBold ? ' force-bold-all' : '');
+        pageDiv.innerHTML =
+          '<div style="text-align:center; font-weight:bold; font-size:' + advanceConfig.titleFontSize + 'px; margin-bottom:6px; height:' + advanceConfig.titleHeight + 'px; line-height:' + advanceConfig.titleHeight + 'px;">' +
+            'LAPORAN HASIL TAGIHAN DEPO ' + depo +
+          '</div>' +
+          '<table class="lht-header-info" style="font-size:' + advanceConfig.infoFontSize + 'px;">' +
+            '<colgroup>' + infoColgroupHtml + '</colgroup>' +
+            '<tr style="height:' + advanceConfig.infoRowHeight + 'px;">' +
+              '<td>Nama</td><td>: ' + penagih + '</td>' +
+              '<td>Perusahaan</td><td>: ' + perusahaan + '</td>' +
+              '<td>Divisi</td><td>: ' + divisi + '</td>' +
+              '<td>Tanggal</td><td>: ' + tanggalFormatted + '</td>' +
+            '</tr>' +
+            '<tr style="height:' + advanceConfig.infoRowHeight + 'px;">' +
+              '<td colspan="6"></td>' +
+              '<td>Di input oleh</td><td>: ' + admin + '</td>' +
+            '</tr>' +
+          '</table>' +
+          '<table class="lht-table">' +
+            '<colgroup>' + dataColgroupHtml + '</colgroup>' +
+            '<thead>' +
+              '<tr style="height:' + advanceConfig.thHeight + 'px;">' +
+                '<th style="font-size:' + advanceConfig.thFontSize + 'px;">No.</th>' +
+                '<th style="font-size:' + advanceConfig.thFontSize + 'px;">Kode</th>' +
+                '<th style="font-size:' + advanceConfig.thFontSize + 'px;">Customer</th>' +
+                '<th style="font-size:' + advanceConfig.thFontSize + 'px;">Umur</th>' +
+                '<th style="font-size:' + advanceConfig.thFontSize + 'px;">No. Faktur</th>' +
+                '<th style="font-size:' + advanceConfig.thFontSize + 'px;">Tgl. Faktur</th>' +
+                '<th style="font-size:' + advanceConfig.thFontSize + 'px;">Nilai Faktur</th>' +
+                '<th style="font-size:' + advanceConfig.thFontSize + 'px;">Terbayar</th>' +
+                '<th style="font-size:' + advanceConfig.thFontSize + 'px;">Terhutang</th>' +
+                '<th style="font-size:' + advanceConfig.thFontSize + 'px;">BG / Bank</th>' +
+                '<th style="font-size:' + advanceConfig.thFontSize + 'px;">No. BG / Rek.</th>' +
+                '<th style="font-size:' + advanceConfig.thFontSize + 'px;">Tgl</th>' +
+                '<th style="font-size:' + advanceConfig.thFontSize + 'px;">Nilai TF/BG</th>' +
+                '<th style="font-size:' + advanceConfig.thFontSize + 'px;">Nilai Tunai</th>' +
+                '<th style="font-size:' + advanceConfig.thFontSize + 'px;">Ket</th>' +
+              '</tr>' +
+            '</thead>' +
+            '<tbody>' + rowsHtml + '</tbody>' +
+            '<tfoot>' +
+              '<tr style="font-weight:bold; height:' + advanceConfig.totalRowHeight + 'px; font-size:' + advanceConfig.totalFontSize + 'px;">' +
+                '<td colspan="6" style="text-align:right; padding-right:6px;">TOTAL TAGIHAN</td>' +
+                '<td style="text-align:right; padding-right:4px;">' + formatRupiah(totalNilai) + '</td>' +
+                '<td style="text-align:right; padding-right:4px;">' + formatRupiah(totalTerbayar) + '</td>' +
+                '<td style="text-align:right; padding-right:4px;">' + formatRupiah(totalTerhutang) + '</td>' +
+                '<td colspan="3" style="text-align:center;">TOTAL BAYAR</td>' +
+                '<td></td><td></td><td></td>' +
+              '</tr>' +
+              '<tr style="font-weight:bold; height:' + advanceConfig.ttdRowHeight + 'px; font-size:' + advanceConfig.ttdFontSize + 'px;">' +
+                '<td colspan="9" style="text-align:right; vertical-align:middle; padding-right:6px;">TTD SALES & COLLECTOR</td>' +
+                '<td colspan="2"></td>' +
+                '<td colspan="2" style="text-align:center; vertical-align:middle;">TGL & TTD ADMIN</td>' +
+                '<td colspan="2"></td>' +
+              '</tr>' +
+            '</tfoot>' +
+          '</table>';
         container.appendChild(pageDiv);
       });
     }
@@ -593,11 +1111,13 @@
       const btnS = document.getElementById('btnSimpan');
       const btnU = document.getElementById('btnUnduhPDF');
       const btnSU = document.getElementById('btnSimpanUnduh');
-      const btnC = document.getElementById('btnCetak');
+      const btnCB = document.getElementById('btnCetakBrowser');
+      const btnCP = document.getElementById('btnCetakPDF');
+
+      const allBtns = [btnS, btnU, btnSU, btnCB, btnCP];
 
       if (isLoading) {
-        btnS.disabled = true; btnU.disabled = true; btnSU.disabled = true; btnC.disabled = true;
-        btnS.classList.add('opacity-60'); btnU.classList.add('opacity-60'); btnSU.classList.add('opacity-60'); btnC.classList.add('opacity-60');
+        allBtns.forEach(function(b) { if (b) { b.disabled = true; b.classList.add('opacity-60'); } });
 
         if (btnType === 'simpan') {
           document.getElementById('iconSimpan').innerHTML = '<span class="spinner"></span>';
@@ -610,8 +1130,7 @@
           document.getElementById('textSimpanUnduh').innerText = 'Memproses...';
         }
       } else {
-        btnS.disabled = false; btnU.disabled = false; btnSU.disabled = false; btnC.disabled = false;
-        btnS.classList.remove('opacity-60'); btnU.classList.remove('opacity-60'); btnSU.classList.remove('opacity-60'); btnC.classList.remove('opacity-60');
+        allBtns.forEach(function(b) { if (b) { b.disabled = false; b.classList.remove('opacity-60'); } });
 
         document.getElementById('iconSimpan').innerText = '💾';
         document.getElementById('textSimpan').innerText = 'Simpan Spreadsheet';
@@ -622,11 +1141,18 @@
       }
     }
 
-    function handleDirectPrint() {
+    function handleDirectPrintBrowser() {
       if (currentActiveItems.length === 0) {
         return alert('Silakan centang minimal satu data piutang!');
       }
       window.print();
+    }
+
+    function handleDirectPrintPDF() {
+      if (currentActiveItems.length === 0) {
+        return alert('Silakan centang minimal satu data piutang!');
+      }
+      generateAndDownloadPDF(true);
     }
 
     function handleSimpanOnly() {
@@ -639,7 +1165,7 @@
       }
       setButtonLoading('pdf', true);
       setTimeout(function() {
-        generateAndDownloadPDF();
+        generateAndDownloadPDF(false);
         setButtonLoading('pdf', false);
       }, 300);
     }
@@ -649,7 +1175,7 @@
     }
 
     function executeSaveProcess(shouldDownloadPDF) {
-      const validItemsToSave = currentActiveItems.filter(item => !item.isRowEmpty);
+      const validItemsToSave = currentActiveItems.filter(function(item) { return !item.isRowEmpty; });
 
       if (validItemsToSave.length === 0) {
         return alert('Silakan centang minimal satu data piutang untuk disimpan!');
@@ -670,14 +1196,14 @@
       google.script.run
         .withSuccessHandler(function(res) {
           setButtonLoading(btnType, false);
-          if (!res.success) {
-            return alert(res.message);
+          if (!res || !res.success) {
+            return alert(res ? res.message : 'Gagal menyimpan data.');
           }
 
           alert(res.message);
 
           if (shouldDownloadPDF) {
-            generateAndDownloadPDF();
+            generateAndDownloadPDF(false);
           }
         })
         .withFailureHandler(function(err) {
@@ -687,116 +1213,165 @@
         .simpanKeSpreadsheetTarget(headerConfig, currentActiveItems);
     }
 
-    function generateAndDownloadPDF() {
+    function generateAndDownloadPDF(isDirectPrint) {
       try {
         const { jsPDF } = window.jspdf;
+        const paperVal = safeStr(document.getElementById('confPaperSize').value);
+        const selectedPaper = paperVal ? paperVal : 'letter';
+        const isForceBold = document.getElementById('forceAllBold').checked;
+
         const doc = new jsPDF({
           orientation: 'landscape',
           unit: 'mm',
-          format: 'a4'
+          format: selectedPaper
         });
 
-        const depo = document.getElementById('confDepo').value || 'DEPO';
-        const penagihRaw = document.getElementById('confPenagih').value || 'Penagih';
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const marginLR = 5;
+        const usableWidth = pageWidth - (marginLR * 2);
+
+        const colWeights = advanceConfig.colWidths;
+        const sumW = colWeights.reduce(function(a, b) { return a + b; }, 0);
+        const totalWeight = sumW > 0 ? sumW : 100;
+        const colWidths = colWeights.map(function(w) { return (w / totalWeight) * usableWidth; });
+
+        const pdfTitleFontPt = (advanceConfig.titleFontSize / 14) * 13;
+        const pdfInfoFontPt = (advanceConfig.infoFontSize / 9.5) * 8.5;
+        const pdfThFontPt = (advanceConfig.thFontSize / 8.5) * 7.8;
+        const pdfTdFontPt = (advanceConfig.tdFontSize / 9.0) * 7.8;
+        const pdfTotalFontPt = (advanceConfig.totalFontSize / 9.0) * 7.8;
+        const pdfTtdFontPt = (advanceConfig.ttdFontSize / 9.0) * 7.8;
+
+        const pdfTdMinHeightMm = (advanceConfig.tdRowHeight / 20) * 5.2;
+        const pdfTotalMinHeightMm = (advanceConfig.totalRowHeight / 20) * 5.5;
+        const pdfTtdMinHeightMm = (advanceConfig.ttdRowHeight / 38) * 12;
+
+        const infoWeights = advanceConfig.infoColWidths;
+        const sumInfoW = infoWeights.reduce(function(a, b) { return a + b; }, 0);
+        const totalInfoW = sumInfoW > 0 ? sumInfoW : 100;
+        let cumInfoX = marginLR;
+        const infoXPositions = infoWeights.map(function(w) {
+          const currentX = cumInfoX;
+          cumInfoX += (w / totalInfoW) * usableWidth;
+          return currentX;
+        });
+
+        const depoVal = safeStr(document.getElementById('confDepo').value);
+        const depo = depoVal ? depoVal : 'DEPO';
+        const penagihVal = safeStr(document.getElementById('confPenagih').value);
+        const penagihRaw = penagihVal ? penagihVal : 'Penagih';
         const cleanPenagih = penagihRaw.replace(/[/\\?%*:|"<>]/g, '').trim();
-        const perusahaan = document.getElementById('confPerusahaan').value || '';
-        const divisi = document.getElementById('confDivisi').value || '';
-        const admin = document.getElementById('confAdmin').value || '';
-        const tanggalRaw = document.getElementById('confTanggal').value || '';
+        const perusahaan = safeStr(document.getElementById('confPerusahaan').value);
+        const divisi = safeStr(document.getElementById('confDivisi').value);
+        const admin = safeStr(document.getElementById('confAdmin').value);
+        const tanggalRaw = safeStr(document.getElementById('confTanggal').value);
         const tanggalFormatted = formatDateDMY(tanggalRaw);
 
-        const fileName = `LHT_${depo}_${cleanPenagih}_${tanggalFormatted.replace(/\//g, '-')}.pdf`;
+        const fileName = 'LHT_' + depo + '_' + cleanPenagih + '_' + tanggalFormatted.replace(/\//g, '-') + '.pdf';
 
         const pagesData = [];
         for (let i = 0; i < currentActiveItems.length; i += 17) {
           pagesData.push(currentActiveItems.slice(i, i + 17));
         }
 
-        pagesData.forEach((pageItems, pIdx) => {
+        pagesData.forEach(function(pageItems, pIdx) {
           if (pIdx > 0) doc.addPage();
 
           doc.setFont('helvetica', 'bold');
-          doc.setFontSize(13);
-          doc.text(`LAPORAN HASIL TAGIHAN DEPO ${depo}`, 148.5, 12, { align: 'center' });
+          doc.setFontSize(pdfTitleFontPt);
+          const titleY = 11;
+          doc.text('LAPORAN HASIL TAGIHAN DEPO ' + depo, pageWidth / 2, titleY, { align: 'center' });
 
-          doc.setFontSize(8.5);
+          doc.setFontSize(pdfInfoFontPt);
           doc.setFont('helvetica', 'bold');
 
-          doc.text('Nama', 10, 19);
-          doc.text(`: ${cleanPenagih}`, 28, 19);
+          const infoRow1Y = titleY + ((advanceConfig.titleHeight / 20) * 7);
+          const infoRow2Y = infoRow1Y + ((advanceConfig.infoRowHeight / 16) * 4.5);
 
-          doc.text('Perusahaan', 90, 19);
-          doc.text(`: ${perusahaan}`, 112, 19);
+          doc.text('Nama', infoXPositions[0], infoRow1Y);
+          doc.text(': ' + cleanPenagih, infoXPositions[1], infoRow1Y);
 
-          doc.text('Divisi', 165, 19);
-          doc.text(`: ${divisi}`, 178, 19);
+          doc.text('Perusahaan', infoXPositions[2], infoRow1Y);
+          doc.text(': ' + perusahaan, infoXPositions[3], infoRow1Y);
 
-          doc.text('Tanggal', 225, 19);
-          doc.text(`: ${tanggalFormatted}`, 245, 19);
+          doc.text('Divisi', infoXPositions[4], infoRow1Y);
+          doc.text(': ' + divisi, infoXPositions[5], infoRow1Y);
 
-          doc.text('Di input oleh', 225, 23.5);
-          doc.text(`: ${admin}`, 245, 23.5);
+          doc.text('Tanggal', infoXPositions[6], infoRow1Y);
+          doc.text(': ' + tanggalFormatted, infoXPositions[7], infoRow1Y);
+
+          doc.text('Di input oleh', infoXPositions[6], infoRow2Y);
+          doc.text(': ' + admin, infoXPositions[7], infoRow2Y);
 
           let totalNilai = 0, totalTerbayar = 0, totalTerhutang = 0;
           const tableBody = [];
 
-          pageItems.forEach((item, rIdx) => {
-            totalNilai += item.nilaiFaktur || 0;
-            totalTerbayar += item.terbayar || 0;
-            totalTerhutang += item.sisaPiutang || 0;
+          pageItems.forEach(function(item, rIdx) {
+            const nFaktur = Number(item.nilaiFaktur) ? Number(item.nilaiFaktur) : 0;
+            const nTerbayar = Number(item.terbayar) ? Number(item.terbayar) : 0;
+            const nSisa = Number(item.sisaPiutang) ? Number(item.sisaPiutang) : 0;
+
+            totalNilai += nFaktur;
+            totalTerbayar += nTerbayar;
+            totalTerhutang += nSisa;
 
             tableBody.push([
               item.isRowEmpty ? '' : (pIdx * 17 + rIdx + 1),
-              item.noPelanggan || '',
-              item.namaPelanggan || '',
-              item.isRowEmpty ? '' : (item.umur !== undefined ? item.umur : ''),
-              item.noFaktur || '',
-              item.tglFaktur || '',
-              item.isRowEmpty ? '' : (item.nilaiFaktur ? formatRupiah(item.nilaiFaktur) : ''),
-              item.isRowEmpty ? '' : (item.terbayar > 0 ? formatRupiah(item.terbayar) : ''),
-              item.isRowEmpty ? '' : (item.sisaPiutang ? formatRupiah(item.sisaPiutang) : ''),
+              item.isRowEmpty ? '' : safeStr(item.noPelanggan),
+              item.isRowEmpty ? '' : safeStr(item.namaPelanggan),
+              item.isRowEmpty ? '' : safeStr(item.umur),
+              item.isRowEmpty ? '' : safeStr(item.noFaktur),
+              item.isRowEmpty ? '' : safeStr(item.tglFaktur),
+              item.isRowEmpty ? '' : (nFaktur > 0 ? formatRupiah(nFaktur) : ''),
+              item.isRowEmpty ? '' : (nTerbayar > 0 ? formatRupiah(nTerbayar) : ''),
+              item.isRowEmpty ? '' : (nSisa > 0 ? formatRupiah(nSisa) : ''),
               '', '', '', '', '', ''
             ]);
           });
 
           const tableFoot = [
             [
-              { content: 'TOTAL TAGIHAN', colSpan: 6, styles: { halign: 'right', valign: 'middle', fontStyle: 'bold' } },
-              { content: formatRupiah(totalNilai), styles: { halign: 'right', valign: 'middle', fontStyle: 'bold' } },
-              { content: formatRupiah(totalTerbayar), styles: { halign: 'right', valign: 'middle', fontStyle: 'bold' } },
-              { content: formatRupiah(totalTerhutang), styles: { halign: 'right', valign: 'middle', fontStyle: 'bold' } },
-              { content: 'TOTAL BAYAR', colSpan: 3, styles: { halign: 'center', valign: 'middle', fontStyle: 'bold' } },
+              { content: 'TOTAL TAGIHAN', colSpan: 6, styles: { halign: 'right', valign: 'middle', fontStyle: 'bold', fontSize: pdfTotalFontPt, minCellHeight: pdfTotalMinHeightMm } },
+              { content: formatRupiah(totalNilai), styles: { halign: 'right', valign: 'middle', fontStyle: 'bold', fontSize: pdfTotalFontPt, minCellHeight: pdfTotalMinHeightMm } },
+              { content: formatRupiah(totalTerbayar), styles: { halign: 'right', valign: 'middle', fontStyle: 'bold', fontSize: pdfTotalFontPt, minCellHeight: pdfTotalMinHeightMm } },
+              { content: formatRupiah(totalTerhutang), styles: { halign: 'right', valign: 'middle', fontStyle: 'bold', fontSize: pdfTotalFontPt, minCellHeight: pdfTotalMinHeightMm } },
+              { content: 'TOTAL BAYAR', colSpan: 3, styles: { halign: 'center', valign: 'middle', fontStyle: 'bold', fontSize: pdfTotalFontPt, minCellHeight: pdfTotalMinHeightMm } },
               '', '', ''
             ],
             [
-              { content: 'TTD SALES & COLLECTOR', colSpan: 9, styles: { halign: 'right', valign: 'middle', fontStyle: 'bold', minCellHeight: 12 } },
-              { content: '', colSpan: 2, styles: { minCellHeight: 12 } },
-              { content: 'TGL & TTD ADMIN', colSpan: 2, styles: { halign: 'center', valign: 'middle', fontStyle: 'bold', minCellHeight: 12 } },
-              { content: '', colSpan: 2, styles: { minCellHeight: 12 } }
+              { content: 'TTD SALES & COLLECTOR', colSpan: 9, styles: { halign: 'right', valign: 'middle', fontStyle: 'bold', fontSize: pdfTtdFontPt, minCellHeight: pdfTtdMinHeightMm } },
+              { content: '', colSpan: 2, styles: { minCellHeight: pdfTtdMinHeightMm } },
+              { content: 'TGL & TTD ADMIN', colSpan: 2, styles: { halign: 'center', valign: 'middle', fontStyle: 'bold', fontSize: pdfTtdFontPt, minCellHeight: pdfTtdMinHeightMm } },
+              { content: '', colSpan: 2, styles: { minCellHeight: pdfTtdMinHeightMm } }
             ]
           ];
 
           doc.autoTable({
-            startY: 27,
+            startY: infoRow2Y + 3,
             head: [['No.', 'Kode', 'Customer', 'Umur', 'No. Faktur', 'Tgl. Faktur', 'Nilai Faktur', 'Terbayar', 'Terhutang', 'BG / Bank', 'No. BG / Rek.', 'Tgl', 'Nilai TF/BG', 'Nilai Tunai', 'Ket']],
             body: tableBody,
             foot: tableFoot,
-            margin: { left: 10, right: 10 },
+            margin: { left: marginLR, right: marginLR },
             theme: 'grid',
             styles: {
               font: 'helvetica',
-              fontSize: 7.5,
-              cellPadding: 1.2,
-              alignment: 'center',
+              fontSize: pdfTdFontPt,
+              fontStyle: isForceBold ? 'bold' : 'normal',
+              cellPadding: 1.1,
+              minCellHeight: pdfTdMinHeightMm,
+              halign: 'center',
+              valign: 'middle',
               textColor: [0, 0, 0],
               lineColor: [0, 0, 0],
-              lineWidth: 0.15
+              lineWidth: 0.2
             },
             headStyles: {
               fillColor: [255, 255, 255],
               textColor: [0, 0, 0],
               lineColor: [0, 0, 0],
-              lineWidth: 0.15,
+              lineWidth: 0.2,
+              fontSize: pdfThFontPt,
+              minCellHeight: (advanceConfig.thHeight / 22) * 5.8,
               fontStyle: 'bold',
               halign: 'center'
             },
@@ -804,33 +1379,43 @@
               fillColor: [255, 255, 255],
               textColor: [0, 0, 0],
               lineColor: [0, 0, 0],
-              lineWidth: 0.15,
+              lineWidth: 0.2,
               fontStyle: 'bold',
               valign: 'middle'
             },
             columnStyles: {
-              0: { cellWidth: 8 },
-              1: { cellWidth: 16 },
-              2: { cellWidth: 42, halign: 'left' },
-              3: { cellWidth: 10 },
-              4: { cellWidth: 18 },
-              5: { cellWidth: 18 },
-              6: { cellWidth: 20, halign: 'right' },
-              7: { cellWidth: 20, halign: 'right' },
-              8: { cellWidth: 20, halign: 'right' },
-              9: { cellWidth: 16 },
-              10: { cellWidth: 18 },
-              11: { cellWidth: 10 },
-              12: { cellWidth: 20 },
-              13: { cellWidth: 20 },
-              14: { cellWidth: 21 }
+              0: { cellWidth: colWidths[0], halign: 'center' },
+              1: { cellWidth: colWidths[1], halign: 'center' },
+              2: { cellWidth: colWidths[2], halign: 'left', fontStyle: 'bold' },
+              3: { cellWidth: colWidths[3], halign: 'center' },
+              4: { cellWidth: colWidths[4], halign: 'right' },
+              5: { cellWidth: colWidths[5], halign: 'right' },
+              6: { cellWidth: colWidths[6], halign: 'right' },
+              7: { cellWidth: colWidths[7], halign: 'right' },
+              8: { cellWidth: colWidths[8], halign: 'right' },
+              9: { cellWidth: colWidths[9], halign: 'center' },
+              10: { cellWidth: colWidths[10], halign: 'center' },
+              11: { cellWidth: colWidths[11], halign: 'center' },
+              12: { cellWidth: colWidths[12], halign: 'center' },
+              13: { cellWidth: colWidths[13], halign: 'center' },
+              14: { cellWidth: colWidths[14], halign: 'center' }
             }
           });
         });
 
-        doc.save(fileName);
+        if (isDirectPrint) {
+          doc.autoPrint();
+          const blob = doc.output('blob');
+          const blobUrl = URL.createObjectURL(blob);
+          const printWindow = window.open(blobUrl, '_blank');
+          if (!printWindow) {
+            window.print();
+          }
+        } else {
+          doc.save(fileName);
+        }
       } catch (err) {
-        alert('Gagal membuat PDF: ' + err.message);
+        alert('Gagal memproses dokumen PDF: ' + err.message);
       }
     }
 
