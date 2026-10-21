@@ -10,7 +10,8 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
 
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=IBM+Plex+Sans:wght@400;600;700&family=Inconsolata:wght@400;600;700&family=Inter:wght@400;500;600;700&family=Open+Sans:wght@400;600;700&family=PT+Sans:wght@400;700&family=Roboto+Mono:wght@400;600;700&family=Roboto:wght@400;500;700&family=Source+Sans+3:wght@400;600;700&family=Tinos:wght@400;700&display=swap');
+
     body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
 
     .pdf-page {
@@ -23,6 +24,7 @@
       border: 1px solid #cbd5e1;
       box-sizing: border-box;
       color: #000000;
+      font-variant-numeric: tabular-nums;
       page-break-after: always;
       page-break-inside: avoid;
     }
@@ -60,6 +62,7 @@
       font-size: 9px;
       line-height: 1.15;
       color: #000000;
+      font-variant-numeric: tabular-nums;
     }
     table.lht-table th, table.lht-table td {
       border: 1px solid #000000;
@@ -200,10 +203,10 @@
       <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b pb-3">
         <div>
           <h3 class="text-sm font-bold text-slate-800 flex items-center gap-1.5">
-            <span>⚙️ Pengaturan Advance: Tinggi Baris, Lebar Kolom & Ukuran Font</span>
+            <span>⚙️ Pengaturan Advance: Gaya Font, Tinggi Baris, Lebar Kolom & Ukuran Font</span>
             <span class="bg-emerald-100 text-emerald-800 text-[10px] px-2 py-0.5 rounded-full font-semibold">Tersimpan Otomatis di Browser</span>
           </h3>
-          <p class="text-[11px] text-gray-500 mt-0.5">Ubah ukuran tata letak sesuai kebutuhan cetak Anda. Pengaturan dapat diekspor/diimpor kembali kapan saja.</p>
+          <p class="text-[11px] text-gray-500 mt-0.5">Ubah gaya huruf dan ukuran tata letak sesuai kebutuhan cetak Anda. Pengaturan dapat diekspor/diimpor kembali kapan saja.</p>
         </div>
         <div class="flex flex-wrap items-center gap-2">
           <button onclick="exportAdvancePreset()" class="btn-animated bg-blue-600 hover:bg-blue-700 text-white font-bold px-3 py-1.5 rounded-lg shadow-sm flex items-center gap-1">
@@ -216,6 +219,29 @@
           <button onclick="resetAdvanceToDefault()" class="btn-animated bg-rose-600 hover:bg-rose-700 text-white font-bold px-3 py-1.5 rounded-lg shadow-sm flex items-center gap-1">
             <span>🔄</span> <span>Reset ke Standar</span>
           </button>
+        </div>
+      </div>
+
+      <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div class="space-y-0.5">
+          <label for="adv_fontFamily" class="font-bold text-indigo-950 text-xs flex items-center gap-1.5">
+            <span>🖋️ Gaya Font Dokumen LHT (10 Font Google Standar Faktur & Penagihan):</span>
+          </label>
+          <p class="text-[11px] text-indigo-700">Dirancang dengan fitur angka sejajar (<i>tabular-nums</i>) agar nilai Rupiah & nomor faktur lurus rapi dari atas ke bawah.</p>
+        </div>
+        <div class="w-full md:w-96">
+          <select id="adv_fontFamily" onchange="saveAdvanceFromUI()" class="w-full border border-indigo-300 rounded-xl p-2 bg-white font-bold text-gray-800 shadow-sm focus:ring-2 focus:ring-indigo-500">
+            <option value="Inter">1. Inter (Standar Modern - Sangat Tajam & Jelas)</option>
+            <option value="Roboto">2. Roboto (Standar Bisnis Google - Tegas & Padat)</option>
+            <option value="Open Sans">3. Open Sans (Korporat - Rongga Huruf Lebar)</option>
+            <option value="IBM Plex Sans">4. IBM Plex Sans (Standar Finansial & Akuntansi)</option>
+            <option value="Source Sans 3">5. Source Sans 3 (Standar Dokumen Tabel Padat)</option>
+            <option value="PT Sans">6. PT Sans (Semi-Ramping - Hemat Ruang Nama Toko)</option>
+            <option value="Inconsolata">7. Inconsolata (Monospace Faktur & Dot-Matrix Ramping)</option>
+            <option value="Roboto Mono">8. Roboto Mono (Monospace Akuntansi - Digit Lurus)</option>
+            <option value="IBM Plex Mono">9. IBM Plex Mono (Monospace Logistik / Mesin Ketik)</option>
+            <option value="Tinos">10. Tinos (Serif Formal / Gaya Times New Roman)</option>
+          </select>
         </div>
       </div>
 
@@ -303,7 +329,7 @@
     <div class="no-print bg-white rounded-2xl shadow-sm p-5 border border-gray-200 grid grid-cols-2 md:grid-cols-6 gap-4 text-xs sm:text-sm">
       <div>
         <label class="block font-bold text-gray-700 mb-1">Nama Depo</label>
-        <select id="confDepo" onchange="updatePreviewOnly()" class="w-full border rounded-xl p-2 focus:ring-2 focus:ring-blue-500"></select>
+        <select id="confDepo" onchange="onHeaderConfigChange()" class="w-full border rounded-xl p-2 focus:ring-2 focus:ring-blue-500"></select>
       </div>
       <div>
         <label class="block font-bold text-gray-700 mb-1">Penagih (Sales)</label>
@@ -311,11 +337,11 @@
       </div>
       <div>
         <label class="block font-bold text-gray-700 mb-1">Perusahaan</label>
-        <select id="confPerusahaan" onchange="updatePreviewOnly()" class="w-full border rounded-xl p-2 focus:ring-2 focus:ring-blue-500"></select>
+        <select id="confPerusahaan" onchange="onHeaderConfigChange()" class="w-full border rounded-xl p-2 focus:ring-2 focus:ring-blue-500"></select>
       </div>
       <div>
         <label class="block font-bold text-gray-700 mb-1">Divisi</label>
-        <select id="confDivisi" onchange="updatePreviewOnly()" class="w-full border rounded-xl p-2 focus:ring-2 focus:ring-blue-500"></select>
+        <select id="confDivisi" onchange="onHeaderConfigChange()" class="w-full border rounded-xl p-2 focus:ring-2 focus:ring-blue-500"></select>
       </div>
       <div>
         <label class="block font-bold text-gray-700 mb-1">Tanggal</label>
@@ -323,7 +349,7 @@
       </div>
       <div>
         <label class="block font-bold text-gray-700 mb-1">Admin</label>
-        <select id="confAdmin" onchange="updatePreviewOnly()" class="w-full border rounded-xl p-2 focus:ring-2 focus:ring-blue-500"></select>
+        <select id="confAdmin" onchange="onHeaderConfigChange()" class="w-full border rounded-xl p-2 focus:ring-2 focus:ring-blue-500"></select>
       </div>
     </div>
 
@@ -360,7 +386,7 @@
 
     <div class="no-print bg-white rounded-2xl shadow-sm overflow-hidden border border-gray-200">
       <div class="p-4 bg-gray-100 border-b flex justify-between items-center">
-        <h3 class="font-bold text-sm text-gray-700">Daftar Faktur Piutang Dipilih</h3>
+        <h3 class="font-bold text-sm text-gray-700">Daftar Faktur Piutang Dipilih (Urut A-Z Customer)</h3>
         <div class="flex items-center gap-2">
           <button onclick="addEmptyRow()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow btn-animated flex items-center gap-1">
             <span>+</span> <span>Tambah Baris Kosong</span>
@@ -412,6 +438,49 @@
 
     const STORAGE_KEY_ADVANCE = 'LHT_ADVANCE_SETTINGS_V1';
 
+    const FONT_OPTIONS_MAP = {
+      'Inter': {
+        css: "'Inter', sans-serif",
+        pdf: 'helvetica'
+      },
+      'Roboto': {
+        css: "'Roboto', sans-serif",
+        pdf: 'helvetica'
+      },
+      'Open Sans': {
+        css: "'Open Sans', sans-serif",
+        pdf: 'helvetica'
+      },
+      'IBM Plex Sans': {
+        css: "'IBM Plex Sans', sans-serif",
+        pdf: 'helvetica'
+      },
+      'Source Sans 3': {
+        css: "'Source Sans 3', sans-serif",
+        pdf: 'helvetica'
+      },
+      'PT Sans': {
+        css: "'PT Sans', sans-serif",
+        pdf: 'helvetica'
+      },
+      'Inconsolata': {
+        css: "'Inconsolata', monospace",
+        pdf: 'courier'
+      },
+      'Roboto Mono': {
+        css: "'Roboto Mono', monospace",
+        pdf: 'courier'
+      },
+      'IBM Plex Mono': {
+        css: "'IBM Plex Mono', monospace",
+        pdf: 'courier'
+      },
+      'Tinos': {
+        css: "'Tinos', serif",
+        pdf: 'times'
+      }
+    };
+
     function safeStr(val) {
       if (val === undefined || val === null) return '';
       return String(val);
@@ -424,6 +493,38 @@
 
     function getCustomerKey(no, nama) {
       return safeStr(no).trim() + ' - ' + safeStr(nama).trim();
+    }
+
+    function resetEmptyRows() {
+      customEmptyRowsCount = 0;
+    }
+
+    function getSelectedFontInfo() {
+      const key = safeStr(advanceConfig.fontFamily);
+      if (FONT_OPTIONS_MAP[key]) {
+        return FONT_OPTIONS_MAP[key];
+      }
+      return FONT_OPTIONS_MAP['Inter'];
+    }
+
+    function sortItemsByCustomerAZ(itemsArray) {
+      if (!Array.isArray(itemsArray)) return [];
+      return itemsArray.slice().sort(function(a, b) {
+        if (a.isRowEmpty && !b.isRowEmpty) return 1;
+        if (!a.isRowEmpty && b.isRowEmpty) return -1;
+        if (a.isRowEmpty && b.isRowEmpty) return 0;
+
+        const nameA = safeStr(a.namaPelanggan).trim().toLowerCase();
+        const nameB = safeStr(b.namaPelanggan).trim().toLowerCase();
+        if (nameA < nameB) return -1;
+        if (nameA > nameB) return 1;
+
+        const fakA = safeStr(a.noFaktur).trim().toLowerCase();
+        const fakB = safeStr(b.noFaktur).trim().toLowerCase();
+        if (fakA < fakB) return -1;
+        if (fakA > fakB) return 1;
+        return 0;
+      });
     }
 
     const INFO_COL_LABELS = [
@@ -443,6 +544,7 @@
     const DEFAULT_ADVANCE_CONFIG = {
       paperSize: 'letter',
       forceAllBold: true,
+      fontFamily: 'Inter',
       titleFontSize: 14,
       titleHeight: 20,
       infoFontSize: 9.5,
@@ -515,6 +617,10 @@
           }
         }
       });
+
+      if (!FONT_OPTIONS_MAP[result.fontFamily]) {
+        result.fontFamily = defaults.fontFamily;
+      }
       return result;
     }
 
@@ -541,6 +647,11 @@
     function syncAdvanceConfigToUI() {
       document.getElementById('confPaperSize').value = advanceConfig.paperSize ? advanceConfig.paperSize : 'letter';
       document.getElementById('forceAllBold').checked = Boolean(advanceConfig.forceAllBold);
+
+      const fontSelect = document.getElementById('adv_fontFamily');
+      if (fontSelect) {
+        fontSelect.value = FONT_OPTIONS_MAP[advanceConfig.fontFamily] ? advanceConfig.fontFamily : 'Inter';
+      }
 
       document.getElementById('adv_titleFontSize').value = advanceConfig.titleFontSize;
       document.getElementById('adv_titleHeight').value = advanceConfig.titleHeight;
@@ -579,6 +690,9 @@
       advanceConfig.paperSize = document.getElementById('confPaperSize').value;
       advanceConfig.forceAllBold = document.getElementById('forceAllBold').checked;
 
+      const selectedFont = safeStr(document.getElementById('adv_fontFamily').value);
+      advanceConfig.fontFamily = FONT_OPTIONS_MAP[selectedFont] ? selectedFont : 'Inter';
+
       advanceConfig.titleFontSize = safeNum(document.getElementById('adv_titleFontSize').value, DEFAULT_ADVANCE_CONFIG.titleFontSize);
       advanceConfig.titleHeight = safeNum(document.getElementById('adv_titleHeight').value, DEFAULT_ADVANCE_CONFIG.titleHeight);
       advanceConfig.infoFontSize = safeNum(document.getElementById('adv_infoFontSize').value, DEFAULT_ADVANCE_CONFIG.infoFontSize);
@@ -615,7 +729,7 @@
     }
 
     function resetAdvanceToDefault() {
-      if (!confirm('Kembalikan semua pengaturan tinggi, lebar kolom, dan ukuran font ke standar awal?')) return;
+      if (!confirm('Kembalikan semua pengaturan gaya font, tinggi, lebar kolom, dan ukuran font ke standar awal?')) return;
       advanceConfig = JSON.parse(JSON.stringify(DEFAULT_ADVANCE_CONFIG));
       persistAdvanceConfig();
       syncAdvanceConfigToUI();
@@ -700,7 +814,8 @@
           if (!res || !res.success) {
             return alert(res ? res.message : 'Gagal memuat data piutang.');
           }
-          rawPiutangData = Array.isArray(res.items) ? res.items : [];
+          const incomingItems = Array.isArray(res.items) ? res.items : [];
+          rawPiutangData = sortItemsByCustomerAZ(incomingItems);
           
           const badgeEl = document.getElementById('badgeWaktuPembaruan');
           if (res.waktuPembaruan) {
@@ -720,7 +835,14 @@
               });
             }
           });
-          customerList = Array.from(custMap.values());
+          customerList = Array.from(custMap.values()).sort(function(a, b) {
+            const nameA = a.nama.toLowerCase();
+            const nameB = b.nama.toLowerCase();
+            if (nameA < nameB) return -1;
+            if (nameA > nameB) return 1;
+            return a.no.toLowerCase().localeCompare(b.no.toLowerCase());
+          });
+
           isPiutangLoaded = true;
           renderCustomerDropdown();
           checkInitialSmartFill();
@@ -737,9 +859,18 @@
       }
     }
 
+    function onHeaderConfigChange() {
+      resetEmptyRows();
+      if (renderedFilteredItems.length === 0) {
+        renderPiutangTable();
+      } else {
+        updateCheckedRows();
+      }
+    }
+
     function onSalesOrDateChange() {
+      resetEmptyRows();
       applySmartFill(false);
-      updatePreviewOnly();
     }
 
     function getMingguAndHariFromDate(dateStr) {
@@ -766,6 +897,8 @@
     }
 
     function applySmartFill(showAlertIfEmpty) {
+      resetEmptyRows();
+
       const penagih = safeStr(document.getElementById('confPenagih').value).trim();
       const tanggalVal = document.getElementById('confTanggal').value;
       const weekMode = document.getElementById('smartFillWeekMode').value;
@@ -859,6 +992,8 @@
     }
 
     function selectAllCustomers(status) {
+      resetEmptyRows();
+
       if (status) {
         selectedCustomerKeys = new Set(customerList.map(function(c) { return c.key; }));
       } else {
@@ -872,10 +1007,12 @@
       const tbody = document.getElementById('piutangTableBody');
       tbody.innerHTML = '';
 
-      renderedFilteredItems = rawPiutangData.filter(function(item) {
+      const filtered = rawPiutangData.filter(function(item) {
         const key = getCustomerKey(item.noPelanggan, item.namaPelanggan);
         return selectedCustomerKeys.has(key);
       });
+
+      renderedFilteredItems = sortItemsByCustomerAZ(filtered);
 
       if (renderedFilteredItems.length === 0 && customEmptyRowsCount === 0) {
         tbody.innerHTML = '<tr><td colspan="8" class="p-6 text-gray-400">Silakan centang pelanggan di atas untuk menampilkan faktur.</td></tr>';
@@ -884,19 +1021,23 @@
         return;
       }
 
-      renderedFilteredItems.forEach(function(item, idx) {
-        const tr = document.createElement('tr');
-        tr.className = 'hover:bg-blue-50 transition';
-        tr.innerHTML = '<td class="p-2"><input type="checkbox" class="row-cb" data-idx="' + idx + '" checked onchange="updateCheckedRows()"></td>' +
-          '<td class="p-2">' + safeStr(item.noPelanggan) + '</td>' +
-          '<td class="p-2 font-semibold text-left">' + safeStr(item.namaPelanggan) + '</td>' +
-          '<td class="p-2 font-medium text-right">' + safeStr(item.noFaktur) + '</td>' +
-          '<td class="p-2 text-right">' + safeStr(item.tglFaktur) + '</td>' +
-          '<td class="p-2 text-red-600 font-bold">' + safeStr(item.umur) + '</td>' +
-          '<td class="p-2 text-right">Rp ' + formatRupiah(item.nilaiFaktur) + '</td>' +
-          '<td class="p-2 font-bold text-blue-900 text-right">Rp ' + formatRupiah(item.sisaPiutang) + '</td>';
-        tbody.appendChild(tr);
-      });
+      if (renderedFilteredItems.length === 0 && customEmptyRowsCount > 0) {
+        tbody.innerHTML = '<tr><td colspan="8" class="p-4 text-blue-600 font-semibold">Menampilkan ' + customEmptyRowsCount + ' baris kosong pada kanvas pratinjau.</td></tr>';
+      } else {
+        renderedFilteredItems.forEach(function(item, idx) {
+          const tr = document.createElement('tr');
+          tr.className = 'hover:bg-blue-50 transition';
+          tr.innerHTML = '<td class="p-2"><input type="checkbox" class="row-cb" data-idx="' + idx + '" checked onchange="updateCheckedRows()"></td>' +
+            '<td class="p-2">' + safeStr(item.noPelanggan) + '</td>' +
+            '<td class="p-2 font-semibold text-left">' + safeStr(item.namaPelanggan) + '</td>' +
+            '<td class="p-2 font-medium text-right">' + safeStr(item.noFaktur) + '</td>' +
+            '<td class="p-2 text-right">' + safeStr(item.tglFaktur) + '</td>' +
+            '<td class="p-2 text-red-600 font-bold">' + safeStr(item.umur) + '</td>' +
+            '<td class="p-2 text-right">Rp ' + formatRupiah(item.nilaiFaktur) + '</td>' +
+            '<td class="p-2 font-bold text-blue-900 text-right">Rp ' + formatRupiah(item.sisaPiutang) + '</td>';
+          tbody.appendChild(tr);
+        });
+      }
 
       const checkAllEl = document.getElementById('checkAllRows');
       if (checkAllEl) checkAllEl.checked = true;
@@ -906,13 +1047,13 @@
 
     function addEmptyRow() {
       customEmptyRowsCount++;
-      updateCheckedRows();
+      renderPiutangTable();
     }
 
     function removeEmptyRow() {
       if (customEmptyRowsCount > 0) {
         customEmptyRowsCount--;
-        updateCheckedRows();
+        renderPiutangTable();
       }
     }
 
@@ -924,16 +1065,18 @@
 
     function updateCheckedRows() {
       const cbs = document.querySelectorAll('.row-cb');
-      const activeItems = [];
+      const selectedInvoiceItems = [];
       
       cbs.forEach(function(cb) {
         if (cb.checked) {
           const idx = parseInt(cb.getAttribute('data-idx'), 10);
           if (renderedFilteredItems[idx]) {
-            activeItems.push(renderedFilteredItems[idx]);
+            selectedInvoiceItems.push(renderedFilteredItems[idx]);
           }
         }
       });
+
+      const activeItems = sortItemsByCustomerAZ(selectedInvoiceItems);
 
       for (let i = 0; i < customEmptyRowsCount; i++) {
         activeItems.push({
@@ -948,6 +1091,10 @@
           sisaPiutang: 0
         });
       }
+
+      activeItems.forEach(function(item, index) {
+        item.noUrutKanvas = index + 1;
+      });
 
       currentActiveItems = activeItems;
       renderPDFPreview(activeItems);
@@ -976,9 +1123,11 @@
         return;
       }
 
+      const sortedCanvasItems = sortItemsByCustomerAZ(items);
+
       const pagesData = [];
-      for (let i = 0; i < items.length; i += 17) {
-        pagesData.push(items.slice(i, i + 17));
+      for (let i = 0; i < sortedCanvasItems.length; i += 17) {
+        pagesData.push(sortedCanvasItems.slice(i, i + 17));
       }
 
       const depoVal = safeStr(document.getElementById('confDepo').value);
@@ -990,6 +1139,7 @@
       const tanggalRaw = safeStr(document.getElementById('confTanggal').value);
       const tanggalFormatted = formatDateDMY(tanggalRaw);
       const isForceBold = document.getElementById('forceAllBold').checked;
+      const fontInfo = getSelectedFontInfo();
 
       const sumInfo = advanceConfig.infoColWidths.reduce(function(a, b) { return a + b; }, 0);
       const totalInfoWeight = sumInfo > 0 ? sumInfo : 100;
@@ -1016,7 +1166,10 @@
           totalTerbayar += nTerbayar;
           totalTerhutang += nSisa;
 
-          const noUrut = item.isRowEmpty ? '' : String(pIdx * 17 + rIdx + 1);
+          const nomorKanvas = pIdx * 17 + rIdx + 1;
+          item.noUrutKanvas = nomorKanvas;
+
+          const noUrut = String(nomorKanvas);
           const kodePel = item.isRowEmpty ? '' : safeStr(item.noPelanggan);
           const namaPel = item.isRowEmpty ? '' : safeStr(item.namaPelanggan);
           const umurVal = item.isRowEmpty ? '' : safeStr(item.umur);
@@ -1047,11 +1200,13 @@
 
         const pageDiv = document.createElement('div');
         pageDiv.className = 'pdf-page' + (isForceBold ? ' force-bold-all' : '');
+        pageDiv.style.fontFamily = fontInfo.css;
+
         pageDiv.innerHTML =
           '<div style="text-align:center; font-weight:bold; font-size:' + advanceConfig.titleFontSize + 'px; margin-bottom:6px; height:' + advanceConfig.titleHeight + 'px; line-height:' + advanceConfig.titleHeight + 'px;">' +
             'LAPORAN HASIL TAGIHAN DEPO ' + depo +
           '</div>' +
-          '<table class="lht-header-info" style="font-size:' + advanceConfig.infoFontSize + 'px;">' +
+          '<table class="lht-header-info" style="font-size:' + advanceConfig.infoFontSize + 'px; font-family:' + fontInfo.css + ';">' +
             '<colgroup>' + infoColgroupHtml + '</colgroup>' +
             '<tr style="height:' + advanceConfig.infoRowHeight + 'px;">' +
               '<td>Nama</td><td>: ' + penagih + '</td>' +
@@ -1064,7 +1219,7 @@
               '<td>Di input oleh</td><td>: ' + admin + '</td>' +
             '</tr>' +
           '</table>' +
-          '<table class="lht-table">' +
+          '<table class="lht-table" style="font-family:' + fontInfo.css + ';">' +
             '<colgroup>' + dataColgroupHtml + '</colgroup>' +
             '<thead>' +
               '<tr style="height:' + advanceConfig.thHeight + 'px;">' +
@@ -1143,14 +1298,14 @@
 
     function handleDirectPrintBrowser() {
       if (currentActiveItems.length === 0) {
-        return alert('Silakan centang minimal satu data piutang!');
+        return alert('Silakan centang minimal satu data piutang atau tambahkan baris!');
       }
       window.print();
     }
 
     function handleDirectPrintPDF() {
       if (currentActiveItems.length === 0) {
-        return alert('Silakan centang minimal satu data piutang!');
+        return alert('Silakan centang minimal satu data piutang atau tambahkan baris!');
       }
       generateAndDownloadPDF(true);
     }
@@ -1161,7 +1316,7 @@
 
     function handleDownloadPDFOnly() {
       if (currentActiveItems.length === 0) {
-        return alert('Silakan centang minimal satu data piutang!');
+        return alert('Silakan centang minimal satu data piutang atau tambahkan baris!');
       }
       setButtonLoading('pdf', true);
       setTimeout(function() {
@@ -1175,11 +1330,14 @@
     }
 
     function executeSaveProcess(shouldDownloadPDF) {
-      const validItemsToSave = currentActiveItems.filter(function(item) { return !item.isRowEmpty; });
-
-      if (validItemsToSave.length === 0) {
-        return alert('Silakan centang minimal satu data piutang untuk disimpan!');
+      if (currentActiveItems.length === 0) {
+        return alert('Silakan centang minimal satu data piutang atau tambahkan baris untuk disimpan!');
       }
+
+      const itemsToSave = sortItemsByCustomerAZ(currentActiveItems);
+      itemsToSave.forEach(function(item, idx) {
+        item.noUrutKanvas = idx + 1;
+      });
 
       const headerConfig = {
         depo: document.getElementById('confDepo').value,
@@ -1210,7 +1368,7 @@
           setButtonLoading(btnType, false);
           alert('Terjadi kesalahan koneksi: ' + err.message);
         })
-        .simpanKeSpreadsheetTarget(headerConfig, currentActiveItems);
+        .simpanKeSpreadsheetTarget(headerConfig, itemsToSave);
     }
 
     function generateAndDownloadPDF(isDirectPrint) {
@@ -1219,6 +1377,8 @@
         const paperVal = safeStr(document.getElementById('confPaperSize').value);
         const selectedPaper = paperVal ? paperVal : 'letter';
         const isForceBold = document.getElementById('forceAllBold').checked;
+        const fontInfo = getSelectedFontInfo();
+        const pdfFontFamily = fontInfo.pdf;
 
         const doc = new jsPDF({
           orientation: 'landscape',
@@ -1269,21 +1429,23 @@
 
         const fileName = 'LHT_' + depo + '_' + cleanPenagih + '_' + tanggalFormatted.replace(/\//g, '-') + '.pdf';
 
+        const sortedPdfItems = sortItemsByCustomerAZ(currentActiveItems);
+
         const pagesData = [];
-        for (let i = 0; i < currentActiveItems.length; i += 17) {
-          pagesData.push(currentActiveItems.slice(i, i + 17));
+        for (let i = 0; i < sortedPdfItems.length; i += 17) {
+          pagesData.push(sortedPdfItems.slice(i, i + 17));
         }
 
         pagesData.forEach(function(pageItems, pIdx) {
           if (pIdx > 0) doc.addPage();
 
-          doc.setFont('helvetica', 'bold');
+          doc.setFont(pdfFontFamily, 'bold');
           doc.setFontSize(pdfTitleFontPt);
           const titleY = 11;
           doc.text('LAPORAN HASIL TAGIHAN DEPO ' + depo, pageWidth / 2, titleY, { align: 'center' });
 
           doc.setFontSize(pdfInfoFontPt);
-          doc.setFont('helvetica', 'bold');
+          doc.setFont(pdfFontFamily, 'bold');
 
           const infoRow1Y = titleY + ((advanceConfig.titleHeight / 20) * 7);
           const infoRow2Y = infoRow1Y + ((advanceConfig.infoRowHeight / 16) * 4.5);
@@ -1315,8 +1477,10 @@
             totalTerbayar += nTerbayar;
             totalTerhutang += nSisa;
 
+            const nomorKanvas = pIdx * 17 + rIdx + 1;
+
             tableBody.push([
-              item.isRowEmpty ? '' : (pIdx * 17 + rIdx + 1),
+              nomorKanvas,
               item.isRowEmpty ? '' : safeStr(item.noPelanggan),
               item.isRowEmpty ? '' : safeStr(item.namaPelanggan),
               item.isRowEmpty ? '' : safeStr(item.umur),
@@ -1354,7 +1518,7 @@
             margin: { left: marginLR, right: marginLR },
             theme: 'grid',
             styles: {
-              font: 'helvetica',
+              font: pdfFontFamily,
               fontSize: pdfTdFontPt,
               fontStyle: isForceBold ? 'bold' : 'normal',
               cellPadding: 1.1,
@@ -1366,6 +1530,7 @@
               lineWidth: 0.2
             },
             headStyles: {
+              font: pdfFontFamily,
               fillColor: [255, 255, 255],
               textColor: [0, 0, 0],
               lineColor: [0, 0, 0],
@@ -1376,6 +1541,7 @@
               halign: 'center'
             },
             footStyles: {
+              font: pdfFontFamily,
               fillColor: [255, 255, 255],
               textColor: [0, 0, 0],
               lineColor: [0, 0, 0],

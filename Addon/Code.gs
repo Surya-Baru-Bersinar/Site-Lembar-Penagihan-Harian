@@ -11,6 +11,24 @@ function cleanText(val) {
   return String(val).trim();
 }
 
+function sortServerItemsByCustomerAZ(itemsArray) {
+  if (!Array.isArray(itemsArray)) return [];
+  return itemsArray.slice().sort(function(a, b) {
+    if (a.isRowEmpty && !b.isRowEmpty) return 1;
+    if (!a.isRowEmpty && b.isRowEmpty) return -1;
+    if (a.isRowEmpty && b.isRowEmpty) return 0;
+
+    var nameA = cleanText(a.namaPelanggan).toLowerCase();
+    var nameB = cleanText(b.namaPelanggan).toLowerCase();
+    if (nameA < nameB) return -1;
+    if (nameA > nameB) return 1;
+
+    var fakA = cleanText(a.noFaktur).toLowerCase();
+    var fakB = cleanText(b.noFaktur).toLowerCase();
+    return fakA.localeCompare(fakB);
+  });
+}
+
 function getConfData() {
   try {
     var ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -153,17 +171,11 @@ function getPiutangData() {
       });
     });
 
-    items.sort(function(a, b) {
-      var nameA = a.namaPelanggan.toLowerCase();
-      var nameB = b.namaPelanggan.toLowerCase();
-      if (nameA < nameB) return -1;
-      if (nameA > nameB) return 1;
-      return a.noFaktur.localeCompare(b.noFaktur);
-    });
+    var sortedItems = sortServerItemsByCustomerAZ(items);
 
     return { 
       success: true, 
-      items: items, 
+      items: sortedItems, 
       waktuPembaruan: waktuPembaruan 
     };
   } catch (err) {
@@ -178,11 +190,12 @@ function simpanKeSpreadsheetTarget(headerConfig, itemsData) {
     if (!targetUrl) return { success: false, message: 'Tautan LHT pada sheet conf belum diisi!' };
 
     if (!itemsData || !Array.isArray(itemsData) || itemsData.length === 0) {
-      return { success: false, message: 'Tidak ada data piutang yang dipilih!' };
+      return { success: false, message: 'Tidak ada data atau baris yang dipilih!' };
     }
 
     var validItems = itemsData.filter(function(item) {
-      if (!item || item.isRowEmpty) return false;
+      if (!item) return false;
+      if (item.isRowEmpty) return true;
       var hasFaktur = Boolean(item.noFaktur);
       var hasNo = Boolean(item.noPelanggan);
       var hasNama = Boolean(item.namaPelanggan);
@@ -190,8 +203,10 @@ function simpanKeSpreadsheetTarget(headerConfig, itemsData) {
     });
 
     if (validItems.length === 0) {
-      return { success: false, message: 'Tidak ada data faktur valid yang dipilih!' };
+      return { success: false, message: 'Tidak ada baris yang valid untuk disimpan!' };
     }
+
+    validItems = sortServerItemsByCustomerAZ(validItems);
 
     var targetSS = SpreadsheetApp.openByUrl(targetUrl);
     var targetSheetName = confRes.lhtSheet;
@@ -222,8 +237,11 @@ function simpanKeSpreadsheetTarget(headerConfig, itemsData) {
       if (insertRowIndex < 3) insertRowIndex = lastRow;
     }
 
+    var GUNAKAN_NOMOR_KANVAS = true;
+    var ISI_IDENTITAS_PADA_BARIS_KOSONG = true;
+
     var startNo = 1;
-    if (insertRowIndex >= 4) {
+    if (!GUNAKAN_NOMOR_KANVAS && insertRowIndex >= 4) {
       var prevNoVal = targetSheet.getRange(insertRowIndex, 6).getValue();
       if (!isNaN(prevNoVal) && prevNoVal > 0) {
         startNo = parseInt(prevNoVal, 10) + 1;
@@ -234,23 +252,40 @@ function simpanKeSpreadsheetTarget(headerConfig, itemsData) {
 
     var rowsToInsert = [];
     validItems.forEach(function(item, index) {
-      rowsToInsert.push([
-        cleanText(headerConfig.perusahaan),
-        cleanText(headerConfig.penagih),
-        cleanText(headerConfig.divisi),
-        formattedTanggal,
-        cleanText(headerConfig.admin),
-        startNo + index,
-        cleanText(item.noPelanggan),
-        cleanText(item.namaPelanggan),
-        item.umurHariNum ? item.umurHariNum : 0,
-        cleanText(item.noFaktur),
-        cleanText(item.tglFaktur),
-        item.nilaiFaktur ? item.nilaiFaktur : 0,
-        item.terbayar ? item.terbayar : 0,
-        item.sisaPiutang ? item.sisaPiutang : 0,
-        '', '', '', '', '', ''
-      ]);
+      var nomorBaris = GUNAKAN_NOMOR_KANVAS
+        ? (index + 1)
+        : (startNo + index);
+
+      if (item.isRowEmpty) {
+        rowsToInsert.push([
+          ISI_IDENTITAS_PADA_BARIS_KOSONG ? cleanText(headerConfig.perusahaan) : '',
+          ISI_IDENTITAS_PADA_BARIS_KOSONG ? cleanText(headerConfig.penagih) : '',
+          ISI_IDENTITAS_PADA_BARIS_KOSONG ? cleanText(headerConfig.divisi) : '',
+          ISI_IDENTITAS_PADA_BARIS_KOSONG ? formattedTanggal : '',
+          ISI_IDENTITAS_PADA_BARIS_KOSONG ? cleanText(headerConfig.admin) : '',
+          nomorBaris,
+          '', '', '', '', '', '', '', '',
+          '', '', '', '', '', ''
+        ]);
+      } else {
+        rowsToInsert.push([
+          cleanText(headerConfig.perusahaan),
+          cleanText(headerConfig.penagih),
+          cleanText(headerConfig.divisi),
+          formattedTanggal,
+          cleanText(headerConfig.admin),
+          nomorBaris,
+          cleanText(item.noPelanggan),
+          cleanText(item.namaPelanggan),
+          item.umurHariNum ? item.umurHariNum : 0,
+          cleanText(item.noFaktur),
+          cleanText(item.tglFaktur),
+          item.nilaiFaktur ? item.nilaiFaktur : 0,
+          item.terbayar ? item.terbayar : 0,
+          item.sisaPiutang ? item.sisaPiutang : 0,
+          '', '', '', '', '', ''
+        ]);
+      }
     });
 
     targetSheet.insertRowsAfter(insertRowIndex, rowsToInsert.length);
@@ -281,7 +316,7 @@ function simpanKeSpreadsheetTarget(headerConfig, itemsData) {
 
     return { 
       success: true, 
-      message: 'Berhasil menyimpan ' + validItems.length + ' data ke sheet [' + targetSheet.getName() + ']!' 
+      message: 'Berhasil menyimpan ' + validItems.length + ' baris ke sheet [' + targetSheet.getName() + ']!' 
     };
   } catch (err) {
     return { success: false, message: 'Gagal menyimpan ke Spreadsheet: ' + err.message };
