@@ -21,15 +21,15 @@ def main():
 
     required_files = [
         '__init__.py',
+        '0_DownloaderMasterData.py',
         '1_CleanerAcc.py',
-        '1_CleanerAccGiro.py',
-        '1B_DownloaderMasterData.py',
-        '1C_MergedMaster2Main.py',
-        '1D_CleanZeroAR.py',
-        '2_CompareGiro.py',
-        '3_AdjDateFormat.py',
-        '4_HelperSSData.py',
-        '5_ARInjectionToSS.py',
+        '2_CleanerAccGiro.py',
+        '3_MergedMaster2Main.py',
+        '4_CleanZeroAR.py',
+        '5_CompareGiro.py',
+        '6_AdjDateFormat.py',
+        '7_HelperSSData.py',
+        '8_ARInjectionToSS.py',
         'piutang.conf',
         'credentials.json',
     ]
@@ -68,15 +68,15 @@ def main():
         print("--> [INFO] Berkas opsional 'Giro.xls' nggak ditemukan, proses tetap dilanjutkan.")
 
     scripts_to_run = [
+        '0_DownloaderMasterData.py',
         '1_CleanerAcc.py',
-        '1_CleanerAccGiro.py',
-        '1B_DownloaderMasterData.py',
-        '1C_MergedMaster2Main.py',
-        '1D_CleanZeroAR.py',
-        '2_CompareGiro.py',
-        '3_AdjDateFormat.py',
-        '4_HelperSSData.py',
-        '5_ARInjectionToSS.py',
+        '2_CleanerAccGiro.py',
+        '3_MergedMaster2Main.py',
+        '4_CleanZeroAR.py',
+        '5_CompareGiro.py',
+        '6_AdjDateFormat.py',
+        '7_HelperSSData.py',
+        '8_ARInjectionToSS.py',
     ]
 
     for script_name in scripts_to_run:
