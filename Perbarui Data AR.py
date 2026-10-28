@@ -12,7 +12,7 @@ def main():
     else:
         dapur_dir = os.path.join(current_dir, 'Dapur')
 
-    print("--> === OTOMATISASI PEMBARUAN DATABASE AR SITUS ===")
+    print("--> OTOMATISASI PEMBARUAN DATABASE AR SITUS")
 
     if not os.path.exists(dapur_dir):
         print(f"--> [ERROR] Folder '{dapur_dir}' tidak ditemukan!")
@@ -29,7 +29,8 @@ def main():
         '5_CompareGiro.py',
         '6_AdjDateFormat.py',
         '7_HelperSSData.py',
-        '8_ARInjectionToSS.py',
+        '8_HelperFraudData.py',
+        '9_ARInjectionToSS.py',
         'piutang.conf',
         'credentials.json',
     ]
@@ -76,7 +77,8 @@ def main():
         '5_CompareGiro.py',
         '6_AdjDateFormat.py',
         '7_HelperSSData.py',
-        '8_ARInjectionToSS.py',
+        '8_HelperFraudData.py',
+        '9_ARInjectionToSS.py',
     ]
 
     for script_name in scripts_to_run:
