@@ -139,9 +139,46 @@
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
     }
+
+    @keyframes toastSlideIn {
+      from { opacity: 0; transform: translateX(24px) scale(0.96); }
+      to { opacity: 1; transform: translateX(0) scale(1); }
+    }
+    @keyframes toastFadeOut {
+      from { opacity: 1; transform: translateX(0) scale(1); }
+      to { opacity: 0; transform: translateX(24px) scale(0.95); }
+    }
+    @keyframes toastProgress {
+      from { width: 100%; }
+      to { width: 0%; }
+    }
+    .toast-enter { animation: toastSlideIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+    .toast-exit { animation: toastFadeOut 0.2s ease-in forwards; }
   </style>
 </head>
 <body class="p-3 sm:p-6 text-gray-800">
+
+  <div id="toastContainer" class="no-print fixed top-4 right-4 z-50 flex flex-col gap-2.5 max-w-sm w-full pointer-events-none"></div>
+
+  <div id="confirmModalBackdrop" class="no-print fixed inset-0 z-50 hidden bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 transition-opacity">
+    <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-md w-full overflow-hidden transform transition-all">
+      <div class="bg-blue-900 text-white px-5 py-3.5 flex items-center gap-2.5">
+        <span id="confirmModalIcon" class="text-lg">⚠️</span>
+        <h4 id="confirmModalTitle" class="font-bold text-sm tracking-wide">Konfirmasi Tindakan</h4>
+      </div>
+      <div class="p-5">
+        <p id="confirmModalMessage" class="text-xs sm:text-sm text-gray-600 leading-relaxed"></p>
+        <div class="mt-5 flex justify-end items-center gap-2.5">
+          <button id="confirmModalBtnCancel" class="btn-animated px-4 py-2 rounded-xl text-xs font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 border border-gray-300">
+            Batal
+          </button>
+          <button id="confirmModalBtnOk" class="btn-animated px-4 py-2 rounded-xl text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 shadow-sm">
+            Ya, Lanjutkan
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <div class="max-w-7xl mx-auto space-y-5 print-wrapper">
     
@@ -152,6 +189,9 @@
           <p class="text-xs text-blue-200">Sistem Pembuat Laporan Hasil Tagihan Depo</p>
           <span id="badgeWaktuPembaruan" class="bg-blue-800 text-blue-100 px-2.5 py-0.5 rounded-md font-mono text-[11px] border border-blue-700 shadow-sm">
             🕒 Memuat waktu pembaruan...
+          </span>
+          <span id="badgeModeUmur" class="hidden bg-amber-500/20 text-amber-200 px-2.5 py-0.5 rounded-md font-semibold text-[11px] border border-amber-400/40 shadow-sm">
+            📅 Umur Faktur: Mengikuti Tanggal LHT
           </span>
         </div>
       </div>
@@ -203,10 +243,10 @@
       <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b pb-3">
         <div>
           <h3 class="text-sm font-bold text-slate-800 flex items-center gap-1.5">
-            <span>⚙️ Pengaturan Advance: Gaya Font, Tinggi Baris, Lebar Kolom & Ukuran Font</span>
+            <span>⚙️ Pengaturan Advance: Gaya Font, Kalkulasi Umur, Tinggi Baris & Lebar Kolom</span>
             <span class="bg-emerald-100 text-emerald-800 text-[10px] px-2 py-0.5 rounded-full font-semibold">Tersimpan Otomatis di Browser</span>
           </h3>
-          <p class="text-[11px] text-gray-500 mt-0.5">Ubah gaya huruf dan ukuran tata letak sesuai kebutuhan cetak Anda. Pengaturan dapat diekspor/diimpor kembali kapan saja.</p>
+          <p class="text-[11px] text-gray-500 mt-0.5">Ubah gaya huruf, metode hitung umur faktur, dan ukuran tata letak sesuai kebutuhan cetak Anda.</p>
         </div>
         <div class="flex flex-wrap items-center gap-2">
           <button onclick="exportAdvancePreset()" class="btn-animated bg-blue-600 hover:bg-blue-700 text-white font-bold px-3 py-1.5 rounded-lg shadow-sm flex items-center gap-1">
@@ -222,26 +262,44 @@
         </div>
       </div>
 
-      <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div class="space-y-0.5">
-          <label for="adv_fontFamily" class="font-bold text-indigo-950 text-xs flex items-center gap-1.5">
-            <span>🖋️ Gaya Font Dokumen LHT (10 Font Google Standar Faktur & Penagihan):</span>
-          </label>
-          <p class="text-[11px] text-indigo-700">Dirancang dengan fitur angka sejajar (<i>tabular-nums</i>) agar nilai Rupiah & nomor faktur lurus rapi dari atas ke bawah.</p>
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-200 flex flex-col justify-between gap-3">
+          <div class="space-y-0.5">
+            <label for="adv_fontFamily" class="font-bold text-indigo-950 text-xs flex items-center gap-1.5">
+              <span>🖋️ Gaya Font Dokumen LHT (10 Font Standar Faktur):</span>
+            </label>
+            <p class="text-[11px] text-indigo-700">Dirancang dengan fitur angka sejajar (<i>tabular-nums</i>) agar nilai Rupiah & nomor faktur lurus rapi dari atas ke bawah.</p>
+          </div>
+          <div>
+            <select id="adv_fontFamily" onchange="saveAdvanceFromUI()" class="w-full border border-indigo-300 rounded-xl p-2 bg-white font-bold text-gray-800 shadow-sm focus:ring-2 focus:ring-indigo-500">
+              <option value="Inter">1. Inter (Standar Modern - Sangat Tajam & Jelas)</option>
+              <option value="Roboto">2. Roboto (Standar Bisnis Google - Tegas & Padat)</option>
+              <option value="Open Sans">3. Open Sans (Korporat - Rongga Huruf Lebar)</option>
+              <option value="IBM Plex Sans">4. IBM Plex Sans (Standar Finansial & Akuntansi)</option>
+              <option value="Source Sans 3">5. Source Sans 3 (Standar Dokumen Tabel Padat)</option>
+              <option value="PT Sans">6. PT Sans (Semi-Ramping - Hemat Ruang Nama Toko)</option>
+              <option value="Inconsolata">7. Inconsolata (Monospace Faktur & Dot-Matrix Ramping)</option>
+              <option value="Roboto Mono">8. Roboto Mono (Monospace Akuntansi - Digit Lurus)</option>
+              <option value="IBM Plex Mono">9. IBM Plex Mono (Monospace Logistik / Mesin Ketik)</option>
+              <option value="Tinos">10. Tinos (Serif Formal / Gaya Times New Roman)</option>
+            </select>
+          </div>
         </div>
-        <div class="w-full md:w-96">
-          <select id="adv_fontFamily" onchange="saveAdvanceFromUI()" class="w-full border border-indigo-300 rounded-xl p-2 bg-white font-bold text-gray-800 shadow-sm focus:ring-2 focus:ring-indigo-500">
-            <option value="Inter">1. Inter (Standar Modern - Sangat Tajam & Jelas)</option>
-            <option value="Roboto">2. Roboto (Standar Bisnis Google - Tegas & Padat)</option>
-            <option value="Open Sans">3. Open Sans (Korporat - Rongga Huruf Lebar)</option>
-            <option value="IBM Plex Sans">4. IBM Plex Sans (Standar Finansial & Akuntansi)</option>
-            <option value="Source Sans 3">5. Source Sans 3 (Standar Dokumen Tabel Padat)</option>
-            <option value="PT Sans">6. PT Sans (Semi-Ramping - Hemat Ruang Nama Toko)</option>
-            <option value="Inconsolata">7. Inconsolata (Monospace Faktur & Dot-Matrix Ramping)</option>
-            <option value="Roboto Mono">8. Roboto Mono (Monospace Akuntansi - Digit Lurus)</option>
-            <option value="IBM Plex Mono">9. IBM Plex Mono (Monospace Logistik / Mesin Ketik)</option>
-            <option value="Tinos">10. Tinos (Serif Formal / Gaya Times New Roman)</option>
-          </select>
+
+        <div class="bg-amber-50 p-4 rounded-xl border border-amber-200 flex flex-col justify-between gap-3">
+          <div class="space-y-0.5">
+            <label for="adv_dynamicAgeByDate" class="font-bold text-amber-950 text-xs flex items-center justify-between gap-1.5">
+              <span>📅 Mode Perhitungan Kolom "Umur" Faktur:</span>
+              <span id="advAgeModeStatusBadge" class="bg-slate-200 text-slate-700 px-2 py-0.5 rounded-full text-[10px] font-bold">Standar (Real-Time)</span>
+            </label>
+            <p class="text-[11px] text-amber-800">Pilih apakah kolom <b>Umur</b> di tabel, kanvas pratinjau, PDF, dan yang disimpan ke Spreadsheet dihitung dari tanggal hari ini (Standar) atau mengikuti input <b>Tanggal</b> di atas.</p>
+          </div>
+          <div>
+            <select id="adv_dynamicAgeByDate" onchange="saveAdvanceFromUI()" class="w-full border border-amber-300 rounded-xl p-2 bg-white font-bold text-gray-800 shadow-sm focus:ring-2 focus:ring-amber-500">
+              <option value="false">Standar Saat Ini (Berdasarkan Tanggal Hari Ini / Server)</option>
+              <option value="true">Dinamis Berdasarkan Tanggal yang Dipilih Pengguna</option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -385,8 +443,13 @@
     </div>
 
     <div class="no-print bg-white rounded-2xl shadow-sm overflow-hidden border border-gray-200">
-      <div class="p-4 bg-gray-100 border-b flex justify-between items-center">
-        <h3 class="font-bold text-sm text-gray-700">Daftar Faktur Piutang Dipilih (Urut A-Z Customer)</h3>
+      <div class="p-4 bg-gray-100 border-b flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+        <div class="flex flex-wrap items-center gap-2">
+          <h3 class="font-bold text-sm text-gray-700">Daftar Faktur Piutang Dipilih (Urut A-Z Customer)</h3>
+          <span class="bg-blue-50 text-blue-800 border border-blue-200 px-2 py-0.5 rounded-md text-[10px] font-semibold">
+            👆 Klik di mana saja pada baris untuk centang / hapus centang
+          </span>
+        </div>
         <div class="flex items-center gap-2">
           <button onclick="addEmptyRow()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow btn-animated flex items-center gap-1">
             <span>+</span> <span>Tambah Baris Kosong</span>
@@ -400,7 +463,7 @@
         <table class="w-full text-xs text-center border-collapse">
           <thead class="bg-blue-900 text-white uppercase text-[10px]">
             <tr>
-              <th class="p-2.5"><input type="checkbox" id="checkAllRows" checked onchange="toggleCheckAllRows(this.checked)"></th>
+              <th class="p-2.5"><input type="checkbox" id="checkAllRows" checked onchange="toggleCheckAllRows(this.checked)" class="cursor-pointer rounded"></th>
               <th class="p-2.5">No. Pelanggan</th>
               <th class="p-2.5">Nama Pelanggan</th>
               <th class="p-2.5 text-right">No. Faktur</th>
@@ -430,13 +493,128 @@
     let customerList = [];
     let selectedCustomerKeys = new Set();
     let renderedFilteredItems = [];
+    let uncheckedInvoiceKeys = new Set();
     let customEmptyRowsCount = 0;
     let currentActiveItems = [];
     let smartFillRules = [];
     let isConfLoaded = false;
     let isPiutangLoaded = false;
+    let rowPointerDownPos = { x: 0, y: 0 };
 
     const STORAGE_KEY_ADVANCE = 'LHT_ADVANCE_SETTINGS_V1';
+
+    const NOTIFICATION_THEMES = {
+      success: {
+        title: 'Berhasil',
+        icon: '✅',
+        headerBg: 'bg-emerald-700',
+        border: 'border-emerald-600',
+        badgeBg: 'bg-emerald-50 text-emerald-900',
+        progressBg: 'bg-emerald-600'
+      },
+      error: {
+        title: 'Kendala Sistem',
+        icon: '🚨',
+        headerBg: 'bg-rose-700',
+        border: 'border-rose-600',
+        badgeBg: 'bg-rose-50 text-rose-900',
+        progressBg: 'bg-rose-600'
+      },
+      warning: {
+        title: 'Perhatian',
+        icon: '⚠️',
+        headerBg: 'bg-amber-600',
+        border: 'border-amber-500',
+        badgeBg: 'bg-amber-50 text-amber-900',
+        progressBg: 'bg-amber-500'
+      },
+      info: {
+        title: 'Informasi LHT',
+        icon: 'ℹ️',
+        headerBg: 'bg-blue-900',
+        border: 'border-blue-800',
+        badgeBg: 'bg-blue-50 text-blue-900',
+        progressBg: 'bg-blue-700'
+      }
+    };
+
+    function showNotification(message, type, customTitle, durationMs) {
+      const container = document.getElementById('toastContainer');
+      if (!container) return;
+
+      const themeKey = NOTIFICATION_THEMES[type] ? type : 'info';
+      const theme = NOTIFICATION_THEMES[themeKey];
+      const titleText = customTitle || theme.title;
+      const duration = typeof durationMs === 'number' ? durationMs : 4200;
+
+      const toast = document.createElement('div');
+      toast.className = 'pointer-events-auto toast-enter bg-white rounded-2xl shadow-xl border ' + theme.border + ' overflow-hidden';
+
+      toast.innerHTML =
+        '<div class="' + theme.headerBg + ' text-white px-3.5 py-2 flex items-center justify-between gap-2">' +
+          '<div class="flex items-center gap-2">' +
+            '<span class="text-sm">' + theme.icon + '</span>' +
+            '<span class="font-bold text-xs tracking-wide">' + safeStr(titleText) + '</span>' +
+          '</div>' +
+          '<button type="button" class="text-white/80 hover:text-white text-xs font-bold px-1.5 py-0.5 rounded hover:bg-white/10 transition" title="Tutup">✕</button>' +
+        '</div>' +
+        '<div class="p-3.5 text-xs text-gray-700 font-medium leading-relaxed bg-white">' +
+          safeStr(message) +
+        '</div>' +
+        '<div class="w-full bg-gray-100 h-1">' +
+          '<div class="h-1 ' + theme.progressBg + '" style="animation: toastProgress ' + duration + 'ms linear forwards;"></div>' +
+        '</div>';
+
+      const closeBtn = toast.querySelector('button');
+      let isRemoved = false;
+
+      function dismissToast() {
+        if (isRemoved) return;
+        isRemoved = true;
+        toast.classList.remove('toast-enter');
+        toast.classList.add('toast-exit');
+        setTimeout(function() {
+          if (toast.parentNode) toast.parentNode.removeChild(toast);
+        }, 200);
+      }
+
+      if (closeBtn) {
+        closeBtn.onclick = dismissToast;
+      }
+
+      container.appendChild(toast);
+      setTimeout(dismissToast, duration);
+    }
+
+    function showConfirmModal(options, onConfirm) {
+      const backdrop = document.getElementById('confirmModalBackdrop');
+      const titleEl = document.getElementById('confirmModalTitle');
+      const msgEl = document.getElementById('confirmModalMessage');
+      const iconEl = document.getElementById('confirmModalIcon');
+      const btnCancel = document.getElementById('confirmModalBtnCancel');
+      const btnOk = document.getElementById('confirmModalBtnOk');
+
+      if (!backdrop) return;
+
+      titleEl.textContent = (options && options.title) ? options.title : 'Konfirmasi Tindakan';
+      msgEl.textContent = (options && options.message) ? options.message : 'Apakah Anda yakin ingin melanjutkan?';
+      iconEl.textContent = (options && options.icon) ? options.icon : '⚠️';
+      btnOk.textContent = (options && options.confirmText) ? options.confirmText : 'Ya, Lanjutkan';
+
+      function closeModal() {
+        backdrop.classList.add('hidden');
+        btnCancel.onclick = null;
+        btnOk.onclick = null;
+      }
+
+      btnCancel.onclick = closeModal;
+      btnOk.onclick = function() {
+        closeModal();
+        if (typeof onConfirm === 'function') onConfirm();
+      };
+
+      backdrop.classList.remove('hidden');
+    }
 
     const FONT_OPTIONS_MAP = {
       'Inter': {
@@ -495,8 +673,17 @@
       return safeStr(no).trim() + ' - ' + safeStr(nama).trim();
     }
 
+    function getInvoiceUniqueKey(item) {
+      if (!item) return '';
+      return safeStr(item.noPelanggan).trim() + '|' + safeStr(item.noFaktur).trim() + '|' + safeStr(item.tglFaktur).trim();
+    }
+
     function resetEmptyRows() {
       customEmptyRowsCount = 0;
+    }
+
+    function resetUncheckedInvoicesMemory() {
+      uncheckedInvoiceKeys.clear();
     }
 
     function getSelectedFontInfo() {
@@ -505,6 +692,85 @@
         return FONT_OPTIONS_MAP[key];
       }
       return FONT_OPTIONS_MAP['Inter'];
+    }
+
+    function parseDMYToMidnightDate(dmyStr) {
+      const clean = safeStr(dmyStr).trim();
+      if (!clean) return null;
+      const parts = clean.split('/');
+      if (parts.length === 3) {
+        const dd = parseInt(parts[0], 10);
+        const mm = parseInt(parts[1], 10) - 1;
+        const yyyy = parseInt(parts[2], 10);
+        const dt = new Date(yyyy, mm, dd);
+        if (!isNaN(dt.getTime())) {
+          dt.setHours(0, 0, 0, 0);
+          return dt;
+        }
+      }
+      return null;
+    }
+
+    function parseYMDToMidnightDate(ymdStr) {
+      const clean = safeStr(ymdStr).trim();
+      if (!clean) return null;
+      const parts = clean.split('-');
+      if (parts.length === 3) {
+        const yyyy = parseInt(parts[0], 10);
+        const mm = parseInt(parts[1], 10) - 1;
+        const dd = parseInt(parts[2], 10);
+        const dt = new Date(yyyy, mm, dd);
+        if (!isNaN(dt.getTime())) {
+          dt.setHours(0, 0, 0, 0);
+          return dt;
+        }
+      }
+      return null;
+    }
+
+    function recalculateItemsUmur() {
+      const useDynamicDate = Boolean(advanceConfig.dynamicAgeByDate);
+      const selectedDateStr = document.getElementById('confTanggal') ? document.getElementById('confTanggal').value : '';
+      const targetDate = parseYMDToMidnightDate(selectedDateStr);
+
+      const headerBadge = document.getElementById('badgeModeUmur');
+      const panelBadge = document.getElementById('advAgeModeStatusBadge');
+
+      if (useDynamicDate) {
+        if (headerBadge) headerBadge.classList.remove('hidden');
+        if (panelBadge) {
+          panelBadge.textContent = 'Dinamis (Sesuai Tanggal LHT)';
+          panelBadge.className = 'bg-amber-200 text-amber-900 px-2 py-0.5 rounded-full text-[10px] font-bold';
+        }
+      } else {
+        if (headerBadge) headerBadge.classList.add('hidden');
+        if (panelBadge) {
+          panelBadge.textContent = 'Standar (Real-Time)';
+          panelBadge.className = 'bg-slate-200 text-slate-700 px-2 py-0.5 rounded-full text-[10px] font-bold';
+        }
+      }
+
+      rawPiutangData.forEach(function(item) {
+        if (item.serverUmur === undefined) {
+          item.serverUmur = item.umur;
+          item.serverUmurHariNum = item.umurHariNum;
+        }
+
+        if (useDynamicDate && targetDate) {
+          const fakDate = parseDMYToMidnightDate(item.tglFaktur);
+          if (fakDate) {
+            const diffDays = Math.round((targetDate.getTime() - fakDate.getTime()) / (1000 * 60 * 60 * 24));
+            item.umur = diffDays;
+            item.umurHariNum = diffDays;
+          } else {
+            item.umur = item.serverUmur;
+            item.umurHariNum = item.serverUmurHariNum;
+          }
+        } else {
+          item.umur = item.serverUmur;
+          item.umurHariNum = item.serverUmurHariNum;
+        }
+      });
     }
 
     function sortItemsByCustomerAZ(itemsArray) {
@@ -545,6 +811,7 @@
       paperSize: 'letter',
       forceAllBold: true,
       fontFamily: 'Inter',
+      dynamicAgeByDate: false,
       titleFontSize: 14,
       titleHeight: 20,
       infoFontSize: 9.5,
@@ -609,7 +876,7 @@
               });
             }
           } else if (typeof defaults[key] === 'boolean') {
-            result[key] = Boolean(source[key]);
+            result[key] = (source[key] === true || source[key] === 'true');
           } else if (typeof defaults[key] === 'number') {
             result[key] = safeNum(source[key], defaults[key]);
           } else {
@@ -653,6 +920,11 @@
         fontSelect.value = FONT_OPTIONS_MAP[advanceConfig.fontFamily] ? advanceConfig.fontFamily : 'Inter';
       }
 
+      const ageModeSelect = document.getElementById('adv_dynamicAgeByDate');
+      if (ageModeSelect) {
+        ageModeSelect.value = advanceConfig.dynamicAgeByDate ? 'true' : 'false';
+      }
+
       document.getElementById('adv_titleFontSize').value = advanceConfig.titleFontSize;
       document.getElementById('adv_titleHeight').value = advanceConfig.titleHeight;
       document.getElementById('adv_infoFontSize').value = advanceConfig.infoFontSize;
@@ -687,11 +959,16 @@
     }
 
     function saveAdvanceFromUI() {
+      const prevDynamicAge = Boolean(advanceConfig.dynamicAgeByDate);
+
       advanceConfig.paperSize = document.getElementById('confPaperSize').value;
       advanceConfig.forceAllBold = document.getElementById('forceAllBold').checked;
 
       const selectedFont = safeStr(document.getElementById('adv_fontFamily').value);
       advanceConfig.fontFamily = FONT_OPTIONS_MAP[selectedFont] ? selectedFont : 'Inter';
+
+      const ageModeEl = document.getElementById('adv_dynamicAgeByDate');
+      advanceConfig.dynamicAgeByDate = ageModeEl ? (ageModeEl.value === 'true') : false;
 
       advanceConfig.titleFontSize = safeNum(document.getElementById('adv_titleFontSize').value, DEFAULT_ADVANCE_CONFIG.titleFontSize);
       advanceConfig.titleHeight = safeNum(document.getElementById('adv_titleHeight').value, DEFAULT_ADVANCE_CONFIG.titleHeight);
@@ -717,7 +994,32 @@
       advanceConfig.ttdRowHeight = safeNum(document.getElementById('adv_ttdRowHeight').value, DEFAULT_ADVANCE_CONFIG.ttdRowHeight);
 
       persistAdvanceConfig();
+      recalculateItemsUmur();
+
+      if (prevDynamicAge !== advanceConfig.dynamicAgeByDate) {
+        updateTableUmurCellsInPlace();
+        showNotification(
+          advanceConfig.dynamicAgeByDate
+            ? 'Kolom Umur kini dihitung secara dinamis berdasarkan Tanggal LHT yang dipilih.'
+            : 'Kolom Umur dikembalikan ke perhitungan standar (Real-Time Server).',
+          'info',
+          'Mode Perhitungan Umur'
+        );
+      }
+
       updatePreviewOnly();
+    }
+
+    function updateTableUmurCellsInPlace() {
+      const rows = document.querySelectorAll('#piutangTableBody tr[data-row-idx]');
+      rows.forEach(function(tr) {
+        const idx = parseInt(tr.getAttribute('data-row-idx'), 10);
+        const item = renderedFilteredItems[idx];
+        const umurCell = tr.querySelector('.cell-umur');
+        if (item && umurCell) {
+          umurCell.textContent = safeStr(item.umur);
+        }
+      });
     }
 
     function persistAdvanceConfig() {
@@ -729,11 +1031,20 @@
     }
 
     function resetAdvanceToDefault() {
-      if (!confirm('Kembalikan semua pengaturan gaya font, tinggi, lebar kolom, dan ukuran font ke standar awal?')) return;
-      advanceConfig = JSON.parse(JSON.stringify(DEFAULT_ADVANCE_CONFIG));
-      persistAdvanceConfig();
-      syncAdvanceConfigToUI();
-      updatePreviewOnly();
+      showConfirmModal({
+        title: 'Reset Pengaturan Advance',
+        message: 'Kembalikan semua pengaturan gaya font, metode hitung umur faktur, tinggi baris, dan lebar kolom ke standar awal?',
+        icon: '🔄',
+        confirmText: 'Ya, Reset ke Standar'
+      }, function() {
+        advanceConfig = JSON.parse(JSON.stringify(DEFAULT_ADVANCE_CONFIG));
+        persistAdvanceConfig();
+        syncAdvanceConfigToUI();
+        recalculateItemsUmur();
+        updateTableUmurCellsInPlace();
+        updatePreviewOnly();
+        showNotification('Seluruh pengaturan Advance telah dikembalikan ke standar awal.', 'success', 'Reset Berhasil');
+      });
     }
 
     function exportAdvancePreset() {
@@ -747,6 +1058,7 @@
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
+      showNotification('File Preset_Pengaturan_LHT.json berhasil diunduh.', 'info', 'Ekspor Preset');
     }
 
     function triggerImportPreset() {
@@ -763,10 +1075,12 @@
           advanceConfig = mergeAdvanceConfig(DEFAULT_ADVANCE_CONFIG, imported);
           persistAdvanceConfig();
           syncAdvanceConfigToUI();
+          recalculateItemsUmur();
+          updateTableUmurCellsInPlace();
           updatePreviewOnly();
-          alert('Preset pengaturan berhasil diimpor dan diterapkan!');
+          showNotification('Preset pengaturan berhasil diimpor dan diterapkan!', 'success', 'Impor Preset Berhasil');
         } catch (err) {
-          alert('File preset tidak valid: ' + err.message);
+          showNotification('File preset tidak valid: ' + err.message, 'error', 'Gagal Impor Preset');
         }
         event.target.value = '';
       };
@@ -777,7 +1091,7 @@
       google.script.run
         .withSuccessHandler(function(res) {
           if (!res || !res.success) {
-            return alert(res ? res.message : 'Gagal memuat konfigurasi dari server.');
+            return showNotification(res ? res.message : 'Gagal memuat konfigurasi dari server.', 'error', 'Konfigurasi Gagal');
           }
           populateSelect('confAdmin', res.admins);
           populateSelect('confPenagih', res.penagihs);
@@ -790,7 +1104,7 @@
           checkInitialSmartFill();
         })
         .withFailureHandler(function(err) {
-          alert('Gagal mengambil data konfigurasi: ' + err.message);
+          showNotification('Gagal mengambil data konfigurasi: ' + err.message, 'error', 'Kesalahan Server');
         })
         .getConfData();
     }
@@ -812,10 +1126,11 @@
       google.script.run
         .withSuccessHandler(function(res) {
           if (!res || !res.success) {
-            return alert(res ? res.message : 'Gagal memuat data piutang.');
+            return showNotification(res ? res.message : 'Gagal memuat data piutang.', 'error', 'Data Piutang Gagal');
           }
           const incomingItems = Array.isArray(res.items) ? res.items : [];
           rawPiutangData = sortItemsByCustomerAZ(incomingItems);
+          recalculateItemsUmur();
           
           const badgeEl = document.getElementById('badgeWaktuPembaruan');
           if (res.waktuPembaruan) {
@@ -848,7 +1163,7 @@
           checkInitialSmartFill();
         })
         .withFailureHandler(function(err) {
-          alert('Gagal mengambil data piutang: ' + err.message);
+          showNotification('Gagal mengambil data piutang: ' + err.message, 'error', 'Kesalahan Server');
         })
         .getPiutangData();
     }
@@ -870,6 +1185,8 @@
 
     function onSalesOrDateChange() {
       resetEmptyRows();
+      resetUncheckedInvoicesMemory();
+      recalculateItemsUmur();
       applySmartFill(false);
     }
 
@@ -898,6 +1215,8 @@
 
     function applySmartFill(showAlertIfEmpty) {
       resetEmptyRows();
+      resetUncheckedInvoicesMemory();
+      recalculateItemsUmur();
 
       const penagih = safeStr(document.getElementById('confPenagih').value).trim();
       const tanggalVal = document.getElementById('confTanggal').value;
@@ -940,10 +1259,13 @@
           }
         });
         badge.innerHTML = '✨ SmartFill Aktif: <b>' + penagih + '</b> • <b>' + targetMinggu + ', ' + targetHari + '</b> (' + matchedCustomerCount + ' Pelanggan tercentang)';
+        if (showAlertIfEmpty) {
+          showNotification('Jadwal SmartFill diterapkan: ' + matchedCustomerCount + ' pelanggan terpilih untuk ' + penagih + ' (' + targetMinggu + ', ' + targetHari + ').', 'info', 'SmartFill Aktif');
+        }
       } else {
         badge.innerHTML = '✨ SmartFill: <b>' + penagih + '</b> • <b>' + targetMinggu + ', ' + targetHari + '</b> (Tidak ada rute terjadwal)';
         if (showAlertIfEmpty) {
-          alert('Tidak ditemukan jadwal SmartFill untuk Sales "' + penagih + '" pada ' + targetMinggu + ' hari ' + targetHari + '.');
+          showNotification('Tidak ditemukan jadwal SmartFill untuk Sales "' + penagih + '" pada ' + targetMinggu + ' hari ' + targetHari + '.', 'warning', 'Rute Tidak Ditemukan');
         }
       }
 
@@ -961,10 +1283,18 @@
         const isVisible = cust.key.toLowerCase().indexOf(searchQ) !== -1;
         const isChecked = selectedCustomerKeys.has(cust.key) ? 'checked' : '';
         const div = document.createElement('div');
-        div.className = 'flex items-center space-x-2 p-1.5 hover:bg-white rounded border border-transparent hover:border-gray-200';
+        div.className = 'flex items-center space-x-2 p-1.5 hover:bg-white rounded border border-transparent hover:border-gray-200 cursor-pointer select-none';
         div.style.display = isVisible ? 'flex' : 'none';
-        div.innerHTML = '<input type="checkbox" id="cust_' + idx + '" ' + isChecked + ' onchange="toggleCustomerSelectByIdx(' + idx + ', this.checked)" class="rounded text-blue-600">' +
-          '<label for="cust_' + idx + '" class="text-xs font-medium cursor-pointer truncate">' + cust.key + '</label>';
+        div.onclick = function(e) {
+          if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'LABEL')) return;
+          const cb = document.getElementById('cust_' + idx);
+          if (cb) {
+            cb.checked = !cb.checked;
+            toggleCustomerSelectByIdx(idx, cb.checked);
+          }
+        };
+        div.innerHTML = '<input type="checkbox" id="cust_' + idx + '" ' + isChecked + ' onchange="toggleCustomerSelectByIdx(' + idx + ', this.checked)" class="rounded text-blue-600 cursor-pointer">' +
+          '<label for="cust_' + idx + '" class="text-xs font-medium cursor-pointer truncate w-full">' + cust.key + '</label>';
         container.appendChild(div);
       });
     }
@@ -993,6 +1323,7 @@
 
     function selectAllCustomers(status) {
       resetEmptyRows();
+      resetUncheckedInvoicesMemory();
 
       if (status) {
         selectedCustomerKeys = new Set(customerList.map(function(c) { return c.key; }));
@@ -1003,9 +1334,95 @@
       renderPiutangTable();
     }
 
+    function recordRowPointerDown(event) {
+      if (!event) return;
+      rowPointerDownPos.x = event.clientX || 0;
+      rowPointerDownPos.y = event.clientY || 0;
+    }
+
+    function setRowCheckedState(idx, isChecked, trElement) {
+      const item = renderedFilteredItems[idx];
+      if (item) {
+        const invKey = getInvoiceUniqueKey(item);
+        if (isChecked) {
+          uncheckedInvoiceKeys.delete(invKey);
+        } else {
+          uncheckedInvoiceKeys.add(invKey);
+        }
+      }
+      syncRowVisualState(trElement, isChecked);
+    }
+
+    function handleSafeRowClick(event, trElement) {
+      if (!trElement) return;
+
+      const target = event.target;
+      if (target && target.closest && target.closest('input[type="checkbox"], button, a, label')) {
+        return;
+      }
+
+      const dx = Math.abs((event.clientX || 0) - rowPointerDownPos.x);
+      const dy = Math.abs((event.clientY || 0) - rowPointerDownPos.y);
+      const isMouseDragged = (dx > 6 || dy > 6);
+
+      if (isMouseDragged && window.getSelection) {
+        const selectedText = window.getSelection().toString().trim();
+        if (selectedText.length > 0) {
+          return;
+        }
+      }
+
+      const cb = trElement.querySelector('.row-cb');
+      if (!cb) return;
+
+      cb.checked = !cb.checked;
+      const idx = parseInt(cb.getAttribute('data-idx'), 10);
+      setRowCheckedState(idx, cb.checked, trElement);
+      updateCheckedRows();
+    }
+
+    function syncRowVisualState(trElement, isChecked) {
+      if (!trElement) return;
+      if (isChecked) {
+        trElement.classList.remove('bg-gray-50/80', 'opacity-60');
+        trElement.classList.add('hover:bg-blue-50/80');
+      } else {
+        trElement.classList.remove('hover:bg-blue-50/80');
+        trElement.classList.add('bg-gray-50/80', 'opacity-60');
+      }
+    }
+
+    function syncMasterCheckboxState() {
+      const checkAllEl = document.getElementById('checkAllRows');
+      if (!checkAllEl) return;
+      const cbs = document.querySelectorAll('.row-cb');
+      if (cbs.length === 0) {
+        checkAllEl.checked = false;
+        checkAllEl.indeterminate = false;
+        return;
+      }
+      let checkedCount = 0;
+      cbs.forEach(function(cb) {
+        if (cb.checked) checkedCount++;
+      });
+
+      if (checkedCount === 0) {
+        checkAllEl.checked = false;
+        checkAllEl.indeterminate = false;
+      } else if (checkedCount === cbs.length) {
+        checkAllEl.checked = true;
+        checkAllEl.indeterminate = false;
+      } else {
+        checkAllEl.checked = false;
+        checkAllEl.indeterminate = true;
+      }
+    }
+
     function renderPiutangTable() {
       const tbody = document.getElementById('piutangTableBody');
       tbody.innerHTML = '';
+
+      recalculateItemsUmur();
 
       const filtered = rawPiutangData.filter(function(item) {
         const key = getCustomerKey(item.noPelanggan, item.namaPelanggan);
@@ -1017,6 +1434,7 @@
       if (renderedFilteredItems.length === 0 && customEmptyRowsCount === 0) {
         tbody.innerHTML = '<tr><td colspan="8" class="p-6 text-gray-400">Silakan centang pelanggan di atas untuk menampilkan faktur.</td></tr>';
         currentActiveItems = [];
+        syncMasterCheckboxState();
         renderPDFPreview([]);
         return;
       }
@@ -1025,45 +1443,69 @@
         tbody.innerHTML = '<tr><td colspan="8" class="p-4 text-blue-600 font-semibold">Menampilkan ' + customEmptyRowsCount + ' baris kosong pada kanvas pratinjau.</td></tr>';
       } else {
         renderedFilteredItems.forEach(function(item, idx) {
+          const invKey = getInvoiceUniqueKey(item);
+          const isRowChecked = !uncheckedInvoiceKeys.has(invKey);
+          const checkedAttr = isRowChecked ? 'checked' : '';
+
           const tr = document.createElement('tr');
-          tr.className = 'hover:bg-blue-50 transition';
-          tr.innerHTML = '<td class="p-2"><input type="checkbox" class="row-cb" data-idx="' + idx + '" checked onchange="updateCheckedRows()"></td>' +
+          tr.setAttribute('data-row-idx', idx);
+          tr.className = 'transition cursor-pointer ' + (isRowChecked ? 'hover:bg-blue-50/80' : 'bg-gray-50/80 opacity-60');
+          tr.onmousedown = function(e) {
+            recordRowPointerDown(e);
+          };
+          tr.onclick = function(e) {
+            handleSafeRowClick(e, tr);
+          };
+
+          tr.innerHTML = '<td class="p-2"><input type="checkbox" class="row-cb cursor-pointer rounded text-blue-600" data-idx="' + idx + '" ' + checkedAttr + ' onclick="event.stopPropagation()" onchange="setRowCheckedState(' + idx + ', this.checked, this.closest(\'tr\')); updateCheckedRows()"></td>' +
             '<td class="p-2">' + safeStr(item.noPelanggan) + '</td>' +
             '<td class="p-2 font-semibold text-left">' + safeStr(item.namaPelanggan) + '</td>' +
             '<td class="p-2 font-medium text-right">' + safeStr(item.noFaktur) + '</td>' +
             '<td class="p-2 text-right">' + safeStr(item.tglFaktur) + '</td>' +
-            '<td class="p-2 text-red-600 font-bold">' + safeStr(item.umur) + '</td>' +
+            '<td class="p-2 text-red-600 font-bold cell-umur">' + safeStr(item.umur) + '</td>' +
             '<td class="p-2 text-right">Rp ' + formatRupiah(item.nilaiFaktur) + '</td>' +
             '<td class="p-2 font-bold text-blue-900 text-right">Rp ' + formatRupiah(item.sisaPiutang) + '</td>';
           tbody.appendChild(tr);
         });
       }
 
-      const checkAllEl = document.getElementById('checkAllRows');
-      if (checkAllEl) checkAllEl.checked = true;
-
       updateCheckedRows();
     }
 
     function addEmptyRow() {
       customEmptyRowsCount++;
-      renderPiutangTable();
+      if (renderedFilteredItems.length > 0) {
+        updateCheckedRows();
+      } else {
+        renderPiutangTable();
+      }
     }
 
     function removeEmptyRow() {
       if (customEmptyRowsCount > 0) {
         customEmptyRowsCount--;
-        renderPiutangTable();
+        if (renderedFilteredItems.length > 0) {
+          updateCheckedRows();
+        } else {
+          renderPiutangTable();
+        }
       }
     }
 
     function toggleCheckAllRows(status) {
       const cbs = document.querySelectorAll('.row-cb');
-      cbs.forEach(function(cb) { cb.checked = status; });
+      cbs.forEach(function(cb) {
+        cb.checked = status;
+        const idx = parseInt(cb.getAttribute('data-idx'), 10);
+        setRowCheckedState(idx, status, cb.closest('tr'));
+      });
       updateCheckedRows();
     }
 
     function updateCheckedRows() {
+      recalculateItemsUmur();
+      syncMasterCheckboxState();
+
       const cbs = document.querySelectorAll('.row-cb');
       const selectedInvoiceItems = [];
       
@@ -1298,14 +1740,14 @@
 
     function handleDirectPrintBrowser() {
       if (currentActiveItems.length === 0) {
-        return alert('Silakan centang minimal satu data piutang atau tambahkan baris!');
+        return showNotification('Silakan centang minimal satu data piutang atau tambahkan baris!', 'warning', 'Data Belum Dipilih');
       }
       window.print();
     }
 
     function handleDirectPrintPDF() {
       if (currentActiveItems.length === 0) {
-        return alert('Silakan centang minimal satu data piutang atau tambahkan baris!');
+        return showNotification('Silakan centang minimal satu data piutang atau tambahkan baris!', 'warning', 'Data Belum Dipilih');
       }
       generateAndDownloadPDF(true);
     }
@@ -1316,7 +1758,7 @@
 
     function handleDownloadPDFOnly() {
       if (currentActiveItems.length === 0) {
-        return alert('Silakan centang minimal satu data piutang atau tambahkan baris!');
+        return showNotification('Silakan centang minimal satu data piutang atau tambahkan baris!', 'warning', 'Data Belum Dipilih');
       }
       setButtonLoading('pdf', true);
       setTimeout(function() {
@@ -1331,8 +1773,10 @@
 
     function executeSaveProcess(shouldDownloadPDF) {
       if (currentActiveItems.length === 0) {
-        return alert('Silakan centang minimal satu data piutang atau tambahkan baris untuk disimpan!');
+        return showNotification('Silakan centang minimal satu data piutang atau tambahkan baris untuk disimpan!', 'warning', 'Data Belum Dipilih');
       }
+
+      recalculateItemsUmur();
 
       const itemsToSave = sortItemsByCustomerAZ(currentActiveItems);
       itemsToSave.forEach(function(item, idx) {
@@ -1355,10 +1799,10 @@
         .withSuccessHandler(function(res) {
           setButtonLoading(btnType, false);
           if (!res || !res.success) {
-            return alert(res ? res.message : 'Gagal menyimpan data.');
+            return showNotification(res ? res.message : 'Gagal menyimpan data.', 'error', 'Gagal Menyimpan');
           }
 
-          alert(res.message);
+          showNotification(res.message, 'success', 'Tersimpan ke Spreadsheet');
 
           if (shouldDownloadPDF) {
             generateAndDownloadPDF(false);
@@ -1366,13 +1810,15 @@
         })
         .withFailureHandler(function(err) {
           setButtonLoading(btnType, false);
-          alert('Terjadi kesalahan koneksi: ' + err.message);
+          showNotification('Terjadi kesalahan koneksi: ' + err.message, 'error', 'Kesalahan Koneksi');
         })
         .simpanKeSpreadsheetTarget(headerConfig, itemsToSave);
     }
 
     function generateAndDownloadPDF(isDirectPrint) {
       try {
+        recalculateItemsUmur();
+
         const { jsPDF } = window.jspdf;
         const paperVal = safeStr(document.getElementById('confPaperSize').value);
         const selectedPaper = paperVal ? paperVal : 'letter';
@@ -1579,9 +2025,10 @@
           }
         } else {
           doc.save(fileName);
+          showNotification('Dokumen ' + fileName + ' berhasil diunduh.', 'success', 'PDF Selesai');
         }
       } catch (err) {
-        alert('Gagal memproses dokumen PDF: ' + err.message);
+        showNotification('Gagal memproses dokumen PDF: ' + err.message, 'error', 'Kesalahan PDF');
       }
     }
 
