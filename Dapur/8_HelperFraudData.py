@@ -22,7 +22,7 @@ kolom_target = "Nama Penjual"
 
 if kolom_target in df.columns:
     df_hasil = df[
-        ~df[kolom_target].astype(str).str.contains("FRAUD", case=False, na=False)
+        ~df[kolom_target].astype(str).str.contains("CASE", case=False, na=False)
     ]
     df_hasil.to_excel(nama_file, index=False)
     print(f"--> Pembersihan selesai. File {nama_file} berhasil diperbarui.")
