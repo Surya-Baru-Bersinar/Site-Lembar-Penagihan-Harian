@@ -31,6 +31,7 @@ def main():
         '7_HelperSSData.py',
         '8_HelperFraudData.py',
         '9_ARInjectionToSS.py',
+        '10_AutoOpenBrow.py',
         'piutang.conf',
         'credentials.json',
     ]
@@ -79,6 +80,7 @@ def main():
         '7_HelperSSData.py',
         '8_HelperFraudData.py',
         '9_ARInjectionToSS.py',
+        '10_AutoOpenBrow.py',
     ]
 
     for script_name in scripts_to_run:
