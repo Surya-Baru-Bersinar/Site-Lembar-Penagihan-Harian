@@ -193,6 +193,9 @@
           <span id="badgeModeUmur" class="hidden bg-amber-500/20 text-amber-200 px-2.5 py-0.5 rounded-md font-semibold text-[11px] border border-amber-400/40 shadow-sm">
             📅 Umur Faktur: Mengikuti Tanggal LHT
           </span>
+          <span id="badgeModeSortir" class="bg-emerald-500/20 text-emerald-200 px-2.5 py-0.5 rounded-md font-semibold text-[11px] border border-emerald-400/40 shadow-sm">
+            🔃 Urutan: Nama A-Z
+          </span>
         </div>
       </div>
       <div class="flex flex-wrap items-center justify-center gap-2">
@@ -235,7 +238,7 @@
 
       <button onclick="toggleAdvancePanel()" id="btnToggleAdvance" class="btn-animated bg-slate-800 hover:bg-slate-900 text-white font-bold px-3.5 py-2 rounded-xl text-xs shadow flex items-center gap-1.5">
         <span>⚙️</span>
-        <span id="textToggleAdvance">Mode Advance (Tata Letak & Font)</span>
+        <span id="textToggleAdvance">Mode Advance (Tata Letak, Font & Sortir)</span>
       </button>
     </div>
 
@@ -243,10 +246,10 @@
       <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b pb-3">
         <div>
           <h3 class="text-sm font-bold text-slate-800 flex items-center gap-1.5">
-            <span>⚙️ Pengaturan Advance: Gaya Font, Kalkulasi Umur, Tinggi Baris & Lebar Kolom</span>
+            <span>⚙️ Pengaturan Advance: Gaya Font, Kalkulasi Umur, Mode Sortir & Tata Letak</span>
             <span class="bg-emerald-100 text-emerald-800 text-[10px] px-2 py-0.5 rounded-full font-semibold">Tersimpan Otomatis di Browser</span>
           </h3>
-          <p class="text-[11px] text-gray-500 mt-0.5">Ubah gaya huruf, metode hitung umur faktur, dan ukuran tata letak sesuai kebutuhan cetak Anda.</p>
+          <p class="text-[11px] text-gray-500 mt-0.5">Ubah gaya huruf, metode hitung umur faktur, urutan penyortiran data, dan ukuran tata letak sesuai kebutuhan cetak Anda.</p>
         </div>
         <div class="flex flex-wrap items-center gap-2">
           <button onclick="exportAdvancePreset()" class="btn-animated bg-blue-600 hover:bg-blue-700 text-white font-bold px-3 py-1.5 rounded-lg shadow-sm flex items-center gap-1">
@@ -262,7 +265,7 @@
         </div>
       </div>
 
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-200 flex flex-col justify-between gap-3">
           <div class="space-y-0.5">
             <label for="adv_fontFamily" class="font-bold text-indigo-950 text-xs flex items-center gap-1.5">
@@ -298,6 +301,23 @@
             <select id="adv_dynamicAgeByDate" onchange="saveAdvanceFromUI()" class="w-full border border-amber-300 rounded-xl p-2 bg-white font-bold text-gray-800 shadow-sm focus:ring-2 focus:ring-amber-500">
               <option value="false">Standar Saat Ini (Berdasarkan Tanggal Hari Ini / Server)</option>
               <option value="true">Dinamis Berdasarkan Tanggal yang Dipilih Pengguna</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="bg-emerald-50 p-4 rounded-xl border border-emerald-200 flex flex-col justify-between gap-3">
+          <div class="space-y-0.5">
+            <label for="adv_sortMode" class="font-bold text-emerald-950 text-xs flex items-center justify-between gap-1.5">
+              <span>🔃 Mode Pengurutan (Sortir) Data Faktur:</span>
+              <span id="advSortModeStatusBadge" class="bg-emerald-200 text-emerald-900 px-2 py-0.5 rounded-full text-[10px] font-bold">Nama A-Z</span>
+            </label>
+            <p class="text-[11px] text-emerald-800">Mengatur urutan baris di Tabel Faktur, Pratinjau LHT, Cetakan PDF, hingga penyimpanan ke Spreadsheet secara dinamis.</p>
+          </div>
+          <div>
+            <select id="adv_sortMode" onchange="saveAdvanceFromUI()" class="w-full border border-emerald-300 rounded-xl p-2 bg-white font-bold text-gray-800 shadow-sm focus:ring-2 focus:ring-emerald-500">
+              <option value="nama_az">1. Urutkan berdasarkan Nama A-Z (Lalu Tgl. Faktur / Umur Tertua)</option>
+              <option value="no_faktur">2. Urutkan berdasarkan Nomor Faktur (A-Z)</option>
+              <option value="tgl_faktur">3. Urutkan berdasarkan Tgl. Faktur (Terlama / Umur Tertua)</option>
             </select>
           </div>
         </div>
@@ -445,7 +465,7 @@
     <div class="no-print bg-white rounded-2xl shadow-sm overflow-hidden border border-gray-200">
       <div class="p-4 bg-gray-100 border-b flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
         <div class="flex flex-wrap items-center gap-2">
-          <h3 class="font-bold text-sm text-gray-700">Daftar Faktur Piutang Dipilih (Urut A-Z Customer)</h3>
+          <h3 id="judulTabelPiutang" class="font-bold text-sm text-gray-700">Daftar Faktur Piutang Dipilih (Urut Nama A-Z)</h3>
           <span class="bg-blue-50 text-blue-800 border border-blue-200 px-2 py-0.5 rounded-md text-[10px] font-semibold">
             👆 Klik di mana saja pada baris untuk centang / hapus centang
           </span>
@@ -502,6 +522,24 @@
     let rowPointerDownPos = { x: 0, y: 0 };
 
     const STORAGE_KEY_ADVANCE = 'LHT_ADVANCE_SETTINGS_V1';
+
+    const SORT_MODE_LABELS = {
+      'nama_az': {
+        shortBadge: 'Nama A-Z',
+        tableTitle: 'Daftar Faktur Piutang Dipilih (Urut Nama A-Z)',
+        toastDesc: 'Urut berdasarkan Nama Pelanggan (A-Z), lalu Tgl. Faktur Terlama (Umur Tertua).'
+      },
+      'no_faktur': {
+        shortBadge: 'No. Faktur',
+        tableTitle: 'Daftar Faktur Piutang Dipilih (Urut Nomor Faktur)',
+        toastDesc: 'Urut berdasarkan Nomor Faktur (A-Z).'
+      },
+      'tgl_faktur': {
+        shortBadge: 'Tgl. Faktur (Umur)',
+        tableTitle: 'Daftar Faktur Piutang Dipilih (Urut Tgl. Faktur / Umur Tertua)',
+        toastDesc: 'Urut berdasarkan Tgl. Faktur Terlama (Umur Tertua di paling atas).'
+      }
+    };
 
     const NOTIFICATION_THEMES = {
       success: {
@@ -728,6 +766,34 @@
       return null;
     }
 
+    function getSortableDateNumber(dmyStr) {
+      const clean = safeStr(dmyStr).trim();
+      if (!clean) return 99999999;
+      const parts = clean.split('/');
+      if (parts.length === 3) {
+        const dd = parseInt(parts[0], 10);
+        const mm = parseInt(parts[1], 10);
+        const yyyy = parseInt(parts[2], 10);
+        if (!isNaN(dd) && !isNaN(mm) && !isNaN(yyyy)) {
+          return (yyyy * 10000) + (mm * 100) + dd;
+        }
+      }
+      return 99999999;
+    }
+
+    function syncSortModeBadges() {
+      const modeKey = SORT_MODE_LABELS[advanceConfig.sortMode] ? advanceConfig.sortMode : 'nama_az';
+      const info = SORT_MODE_LABELS[modeKey];
+
+      const headerBadge = document.getElementById('badgeModeSortir');
+      const panelBadge = document.getElementById('advSortModeStatusBadge');
+      const tableTitle = document.getElementById('judulTabelPiutang');
+
+      if (headerBadge) headerBadge.textContent = '🔃 Urutan: ' + info.shortBadge;
+      if (panelBadge) panelBadge.textContent = info.shortBadge;
+      if (tableTitle) tableTitle.textContent = info.tableTitle;
+    }
+
     function recalculateItemsUmur() {
       const useDynamicDate = Boolean(advanceConfig.dynamicAgeByDate);
       const selectedDateStr = document.getElementById('confTanggal') ? document.getElementById('confTanggal').value : '';
@@ -771,10 +837,14 @@
           item.umurHariNum = item.serverUmurHariNum;
         }
       });
+
+      syncSortModeBadges();
     }
 
     function sortItemsByCustomerAZ(itemsArray) {
       if (!Array.isArray(itemsArray)) return [];
+      const activeMode = (advanceConfig && advanceConfig.sortMode) ? advanceConfig.sortMode : 'nama_az';
+
       return itemsArray.slice().sort(function(a, b) {
         if (a.isRowEmpty && !b.isRowEmpty) return 1;
         if (!a.isRowEmpty && b.isRowEmpty) return -1;
@@ -782,14 +852,53 @@
 
         const nameA = safeStr(a.namaPelanggan).trim().toLowerCase();
         const nameB = safeStr(b.namaPelanggan).trim().toLowerCase();
-        if (nameA < nameB) return -1;
-        if (nameA > nameB) return 1;
 
         const fakA = safeStr(a.noFaktur).trim().toLowerCase();
         const fakB = safeStr(b.noFaktur).trim().toLowerCase();
-        if (fakA < fakB) return -1;
-        if (fakA > fakB) return 1;
-        return 0;
+
+        const dateNumA = getSortableDateNumber(a.tglFaktur);
+        const dateNumB = getSortableDateNumber(b.tglFaktur);
+
+        const rawUmurA = (a.umurHariNum !== undefined && a.umurHariNum !== '') ? a.umurHariNum : a.umur;
+        const rawUmurB = (b.umurHariNum !== undefined && b.umurHariNum !== '') ? b.umurHariNum : b.umur;
+        const umurA = !isNaN(Number(rawUmurA)) ? Number(rawUmurA) : 0;
+        const umurB = !isNaN(Number(rawUmurB)) ? Number(rawUmurB) : 0;
+
+        function compareDateOldestFirst() {
+          if (dateNumA !== dateNumB) return dateNumA - dateNumB;
+          if (umurA !== umurB) return umurB - umurA;
+          return 0;
+        }
+
+        function compareCustomerAZ() {
+          if (nameA < nameB) return -1;
+          if (nameA > nameB) return 1;
+          return 0;
+        }
+
+        function compareFakturAZ() {
+          return fakA.localeCompare(fakB, undefined, { numeric: true, sensitivity: 'base' });
+        }
+
+        if (activeMode === 'no_faktur') {
+          const resFak = compareFakturAZ();
+          if (resFak !== 0) return resFak;
+          const resCust = compareCustomerAZ();
+          if (resCust !== 0) return resCust;
+          return compareDateOldestFirst();
+        } else if (activeMode === 'tgl_faktur') {
+          const resDate = compareDateOldestFirst();
+          if (resDate !== 0) return resDate;
+          const resCust2 = compareCustomerAZ();
+          if (resCust2 !== 0) return resCust2;
+          return compareFakturAZ();
+        } else {
+          const resCust3 = compareCustomerAZ();
+          if (resCust3 !== 0) return resCust3;
+          const resDate2 = compareDateOldestFirst();
+          if (resDate2 !== 0) return resDate2;
+          return compareFakturAZ();
+        }
       });
     }
 
@@ -812,6 +921,7 @@
       forceAllBold: true,
       fontFamily: 'Inter',
       dynamicAgeByDate: false,
+      sortMode: 'nama_az',
       titleFontSize: 14,
       titleHeight: 20,
       infoFontSize: 9.5,
@@ -888,6 +998,9 @@
       if (!FONT_OPTIONS_MAP[result.fontFamily]) {
         result.fontFamily = defaults.fontFamily;
       }
+      if (!SORT_MODE_LABELS[result.sortMode]) {
+        result.sortMode = defaults.sortMode;
+      }
       return result;
     }
 
@@ -925,6 +1038,11 @@
         ageModeSelect.value = advanceConfig.dynamicAgeByDate ? 'true' : 'false';
       }
 
+      const sortModeSelect = document.getElementById('adv_sortMode');
+      if (sortModeSelect) {
+        sortModeSelect.value = SORT_MODE_LABELS[advanceConfig.sortMode] ? advanceConfig.sortMode : 'nama_az';
+      }
+
       document.getElementById('adv_titleFontSize').value = advanceConfig.titleFontSize;
       document.getElementById('adv_titleHeight').value = advanceConfig.titleHeight;
       document.getElementById('adv_infoFontSize').value = advanceConfig.infoFontSize;
@@ -949,6 +1067,8 @@
       document.getElementById('adv_totalRowHeight').value = advanceConfig.totalRowHeight;
       document.getElementById('adv_ttdFontSize').value = advanceConfig.ttdFontSize;
       document.getElementById('adv_ttdRowHeight').value = advanceConfig.ttdRowHeight;
+
+      syncSortModeBadges();
     }
 
     function onPaperOrBoldChange() {
@@ -960,6 +1080,7 @@
 
     function saveAdvanceFromUI() {
       const prevDynamicAge = Boolean(advanceConfig.dynamicAgeByDate);
+      const prevSortMode = safeStr(advanceConfig.sortMode);
 
       advanceConfig.paperSize = document.getElementById('confPaperSize').value;
       advanceConfig.forceAllBold = document.getElementById('forceAllBold').checked;
@@ -969,6 +1090,10 @@
 
       const ageModeEl = document.getElementById('adv_dynamicAgeByDate');
       advanceConfig.dynamicAgeByDate = ageModeEl ? (ageModeEl.value === 'true') : false;
+
+      const sortModeEl = document.getElementById('adv_sortMode');
+      const selectedSortMode = sortModeEl ? safeStr(sortModeEl.value) : 'nama_az';
+      advanceConfig.sortMode = SORT_MODE_LABELS[selectedSortMode] ? selectedSortMode : 'nama_az';
 
       advanceConfig.titleFontSize = safeNum(document.getElementById('adv_titleFontSize').value, DEFAULT_ADVANCE_CONFIG.titleFontSize);
       advanceConfig.titleHeight = safeNum(document.getElementById('adv_titleHeight').value, DEFAULT_ADVANCE_CONFIG.titleHeight);
@@ -996,18 +1121,30 @@
       persistAdvanceConfig();
       recalculateItemsUmur();
 
-      if (prevDynamicAge !== advanceConfig.dynamicAgeByDate) {
-        updateTableUmurCellsInPlace();
-        showNotification(
-          advanceConfig.dynamicAgeByDate
-            ? 'Kolom Umur kini dihitung secara dinamis berdasarkan Tanggal LHT yang dipilih.'
-            : 'Kolom Umur dikembalikan ke perhitungan standar (Real-Time Server).',
-          'info',
-          'Mode Perhitungan Umur'
-        );
-      }
+      if (prevDynamicAge !== advanceConfig.dynamicAgeByDate || prevSortMode !== advanceConfig.sortMode) {
+        renderPiutangTable();
 
-      updatePreviewOnly();
+        if (prevDynamicAge !== advanceConfig.dynamicAgeByDate) {
+          showNotification(
+            advanceConfig.dynamicAgeByDate
+              ? 'Kolom Umur kini dihitung secara dinamis berdasarkan Tanggal LHT yang dipilih.'
+              : 'Kolom Umur dikembalikan ke perhitungan standar (Real-Time Server).',
+            'info',
+            'Mode Perhitungan Umur'
+          );
+        }
+
+        if (prevSortMode !== advanceConfig.sortMode) {
+          const sortInfo = SORT_MODE_LABELS[advanceConfig.sortMode];
+          showNotification(
+            sortInfo ? sortInfo.toastDesc : 'Mode pengurutan diperbarui.',
+            'info',
+            'Mode Sortir Diperbarui'
+          );
+        }
+      } else {
+        updatePreviewOnly();
+      }
     }
 
     function updateTableUmurCellsInPlace() {
@@ -1033,7 +1170,7 @@
     function resetAdvanceToDefault() {
       showConfirmModal({
         title: 'Reset Pengaturan Advance',
-        message: 'Kembalikan semua pengaturan gaya font, metode hitung umur faktur, tinggi baris, dan lebar kolom ke standar awal?',
+        message: 'Kembalikan semua pengaturan gaya font, metode hitung umur faktur, mode sortir, tinggi baris, dan lebar kolom ke standar awal?',
         icon: '🔄',
         confirmText: 'Ya, Reset ke Standar'
       }, function() {
@@ -1041,8 +1178,7 @@
         persistAdvanceConfig();
         syncAdvanceConfigToUI();
         recalculateItemsUmur();
-        updateTableUmurCellsInPlace();
-        updatePreviewOnly();
+        renderPiutangTable();
         showNotification('Seluruh pengaturan Advance telah dikembalikan ke standar awal.', 'success', 'Reset Berhasil');
       });
     }
@@ -1076,8 +1212,7 @@
           persistAdvanceConfig();
           syncAdvanceConfigToUI();
           recalculateItemsUmur();
-          updateTableUmurCellsInPlace();
-          updatePreviewOnly();
+          renderPiutangTable();
           showNotification('Preset pengaturan berhasil diimpor dan diterapkan!', 'success', 'Impor Preset Berhasil');
         } catch (err) {
           showNotification('File preset tidak valid: ' + err.message, 'error', 'Gagal Impor Preset');
@@ -1129,8 +1264,9 @@
             return showNotification(res ? res.message : 'Gagal memuat data piutang.', 'error', 'Data Piutang Gagal');
           }
           const incomingItems = Array.isArray(res.items) ? res.items : [];
-          rawPiutangData = sortItemsByCustomerAZ(incomingItems);
+          rawPiutangData = incomingItems;
           recalculateItemsUmur();
+          rawPiutangData = sortItemsByCustomerAZ(rawPiutangData);
           
           const badgeEl = document.getElementById('badgeWaktuPembaruan');
           if (res.waktuPembaruan) {
@@ -1789,7 +1925,8 @@
         perusahaan: document.getElementById('confPerusahaan').value,
         divisi: document.getElementById('confDivisi').value,
         tanggal: document.getElementById('confTanggal').value,
-        admin: document.getElementById('confAdmin').value
+        admin: document.getElementById('confAdmin').value,
+        sortMode: advanceConfig.sortMode
       };
 
       const btnType = shouldDownloadPDF ? 'simpan_pdf' : 'simpan';
