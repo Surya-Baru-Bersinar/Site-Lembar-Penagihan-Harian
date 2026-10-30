@@ -11,8 +11,25 @@ function cleanText(val) {
   return String(val).trim();
 }
 
-function sortServerItemsByCustomerAZ(itemsArray) {
+function getServerSortableDateNum(tglStr) {
+  var clean = cleanText(tglStr);
+  if (!clean) return 99999999;
+  var parts = clean.split('/');
+  if (parts.length === 3) {
+    var dd = parseInt(parts[0], 10);
+    var mm = parseInt(parts[1], 10);
+    var yyyy = parseInt(parts[2], 10);
+    if (!isNaN(dd) && !isNaN(mm) && !isNaN(yyyy)) {
+      return (yyyy * 10000) + (mm * 100) + dd;
+    }
+  }
+  return 99999999;
+}
+
+function sortServerItemsByMode(itemsArray, sortMode) {
   if (!Array.isArray(itemsArray)) return [];
+  var mode = cleanText(sortMode) || 'nama_az';
+
   return itemsArray.slice().sort(function(a, b) {
     if (a.isRowEmpty && !b.isRowEmpty) return 1;
     if (!a.isRowEmpty && b.isRowEmpty) return -1;
@@ -20,13 +37,56 @@ function sortServerItemsByCustomerAZ(itemsArray) {
 
     var nameA = cleanText(a.namaPelanggan).toLowerCase();
     var nameB = cleanText(b.namaPelanggan).toLowerCase();
-    if (nameA < nameB) return -1;
-    if (nameA > nameB) return 1;
 
     var fakA = cleanText(a.noFaktur).toLowerCase();
     var fakB = cleanText(b.noFaktur).toLowerCase();
-    return fakA.localeCompare(fakB);
+
+    var dateNumA = getServerSortableDateNum(a.tglFaktur);
+    var dateNumB = getServerSortableDateNum(b.tglFaktur);
+
+    var umurA = !isNaN(Number(a.umurHariNum)) ? Number(a.umurHariNum) : (!isNaN(Number(a.umur)) ? Number(a.umur) : 0);
+    var umurB = !isNaN(Number(b.umurHariNum)) ? Number(b.umurHariNum) : (!isNaN(Number(b.umur)) ? Number(b.umur) : 0);
+
+    function compareDateOldestFirst() {
+      if (dateNumA !== dateNumB) return dateNumA - dateNumB;
+      if (umurA !== umurB) return umurB - umurA;
+      return 0;
+    }
+
+    function compareCustomerAZ() {
+      if (nameA < nameB) return -1;
+      if (nameA > nameB) return 1;
+      return 0;
+    }
+
+    function compareFakturAZ() {
+      return fakA.localeCompare(fakB, undefined, { numeric: true, sensitivity: 'base' });
+    }
+
+    if (mode === 'no_faktur') {
+      var resFak = compareFakturAZ();
+      if (resFak !== 0) return resFak;
+      var resCust = compareCustomerAZ();
+      if (resCust !== 0) return resCust;
+      return compareDateOldestFirst();
+    } else if (mode === 'tgl_faktur') {
+      var resDate = compareDateOldestFirst();
+      if (resDate !== 0) return resDate;
+      var resCust2 = compareCustomerAZ();
+      if (resCust2 !== 0) return resCust2;
+      return compareFakturAZ();
+    } else {
+      var resCust3 = compareCustomerAZ();
+      if (resCust3 !== 0) return resCust3;
+      var resDate2 = compareDateOldestFirst();
+      if (resDate2 !== 0) return resDate2;
+      return compareFakturAZ();
+    }
   });
+}
+
+function sortServerItemsByCustomerAZ(itemsArray) {
+  return sortServerItemsByMode(itemsArray, 'nama_az');
 }
 
 function getConfData() {
@@ -171,7 +231,7 @@ function getPiutangData() {
       });
     });
 
-    var sortedItems = sortServerItemsByCustomerAZ(items);
+    var sortedItems = sortServerItemsByMode(items, 'nama_az');
 
     return { 
       success: true, 
@@ -206,7 +266,8 @@ function simpanKeSpreadsheetTarget(headerConfig, itemsData) {
       return { success: false, message: 'Tidak ada baris yang valid untuk disimpan!' };
     }
 
-    validItems = sortServerItemsByCustomerAZ(validItems);
+    var activeSortMode = (headerConfig && headerConfig.sortMode) ? headerConfig.sortMode : 'nama_az';
+    validItems = sortServerItemsByMode(validItems, activeSortMode);
 
     var targetSS = SpreadsheetApp.openByUrl(targetUrl);
     var targetSheetName = confRes.lhtSheet;
