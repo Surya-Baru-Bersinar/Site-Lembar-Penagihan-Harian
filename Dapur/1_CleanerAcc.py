@@ -7,7 +7,6 @@ indo_months_in = {
     'Jan': 'Jan', 'Feb': 'Feb', 'Mar': 'Mar', 'Apr': 'Apr', 'Mei': 'May', 'Jun': 'Jun',
     'Jul': 'Jul', 'Agu': 'Aug', 'Sep': 'Sep', 'Okt': 'Oct', 'Nop': 'Nov', 'Des': 'Dec',
     'Peb': 'Feb', 'Ags': 'Aug', 'Agt': 'Aug',
-    
     'jan': 'Jan', 'feb': 'Feb', 'mar': 'Mar', 'apr': 'Apr', 'mei': 'May', 'jun': 'Jun',
     'jul': 'Jul', 'agu': 'Aug', 'ags': 'Aug', 'agt': 'Aug', 'sep': 'Sep', 'okt': 'Oct', 'nop': 'Nov', 
     'nov': 'Nov', 'des': 'Dec'
@@ -16,19 +15,15 @@ indo_months_in = {
 def parse_tgl_faktur(val):
     if pd.isna(val) or str(val).strip().lower() in ['', 'nan', 'none']:
         return np.nan
-    
     if isinstance(val, (pd.Timestamp, datetime.datetime, datetime.date)):
         return val.strftime('%Y-%m-%d %H:%M:%S')
-    
     val_str = str(val).strip()
     parts = val_str.split()
-    
     if len(parts) == 3:
         day, month, year = parts[0], parts[1], parts[2]
         if month in indo_months_in:
             month = indo_months_in[month]
             val_str = f"{day} {month} {year}"
-    
     try:
         dt = pd.to_datetime(val_str, dayfirst=True)
         return dt.strftime('%Y-%m-%d %H:%M:%S')
@@ -37,9 +32,11 @@ def parse_tgl_faktur(val):
 
 def clean_data_autofit(input_file, output_file):
     print(f"--> Sedang memproses file: {input_file}...")
-    
     try:
-        df = pd.read_excel(input_file, header=None)
+        try:
+            df = pd.read_excel(input_file, header=None, engine='calamine')
+        except (ImportError, ValueError):
+            df = pd.read_excel(input_file, header=None)
     except Exception as e:
         print(f"--> Error membaca file: {e}")
         return
@@ -167,7 +164,8 @@ def clean_data_autofit(input_file, output_file):
     ]
     temp_df.columns = final_headers
     df_final = temp_df.copy()
-    df_final.reset_index(drop=True, inplace=True)
+    
+    df_final = df_final.reset_index(drop=True)
     
     try:
         with pd.ExcelWriter(output_file, engine='xlsxwriter') as writer:
