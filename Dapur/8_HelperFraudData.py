@@ -2,6 +2,25 @@ import configparser
 import sys
 import pandas as pd
 
+try:
+    import python_calamine
+    DEFAULT_EXCEL_ENGINE = 'calamine'
+except ImportError:
+    DEFAULT_EXCEL_ENGINE = 'openpyxl'
+
+try:
+    pd.set_option('io.excel.xlsx.reader', DEFAULT_EXCEL_ENGINE)
+except Exception:
+    pass
+
+def read_excel_auto(file_path, **kwargs):
+    if DEFAULT_EXCEL_ENGINE == 'calamine':
+        try:
+            return pd.read_excel(file_path, engine='calamine', **kwargs)
+        except Exception:
+            return pd.read_excel(file_path, engine='openpyxl', **kwargs)
+    return pd.read_excel(file_path, engine='openpyxl', **kwargs)
+
 config = configparser.ConfigParser()
 config.read("piutang.conf")
 
@@ -16,7 +35,7 @@ if status_fraud != "ya":
     sys.exit()
 
 nama_file = "Piutang_clean_temp.xlsx"
-df = pd.read_excel(nama_file)
+df = read_excel_auto(nama_file)
 
 kolom_target = "Nama Penjual"
 
