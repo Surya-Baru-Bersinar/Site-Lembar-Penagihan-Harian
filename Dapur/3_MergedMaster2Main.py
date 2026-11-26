@@ -2,9 +2,28 @@ import configparser
 import os
 import pandas as pd
 
+try:
+    import python_calamine
+    DEFAULT_EXCEL_ENGINE = 'calamine'
+except ImportError:
+    DEFAULT_EXCEL_ENGINE = 'openpyxl'
+
+try:
+    pd.set_option('io.excel.xlsx.reader', DEFAULT_EXCEL_ENGINE)
+except Exception:
+    pass
+
+def read_excel_auto(file_path, **kwargs):
+    if DEFAULT_EXCEL_ENGINE == 'calamine':
+        try:
+            return pd.read_excel(file_path, engine='calamine', **kwargs)
+        except Exception:
+            return pd.read_excel(file_path, engine='openpyxl', **kwargs)
+    return pd.read_excel(file_path, engine='openpyxl', **kwargs)
+
 def find_header_and_read(file_path, sheet_name, required_cols_options):
     sheet_target = sheet_name if sheet_name else 0
-    df_raw = pd.read_excel(file_path, sheet_name=sheet_target, header=None)
+    df_raw = read_excel_auto(file_path, sheet_name=sheet_target, header=None)
     
     header_idx = None
     matched_cols = []
@@ -32,7 +51,7 @@ def find_header_and_read(file_path, sheet_name, required_cols_options):
             f"Kolom {required_cols_options} tidak ditemukan pada sheet '{sheet_target}' di file {file_path}."
         )
     
-    df = pd.read_excel(file_path, sheet_name=sheet_target, header=header_idx)
+    df = read_excel_auto(file_path, sheet_name=sheet_target, header=header_idx)
     df.columns = df.columns.astype(str).str.strip()
     return df, matched_cols
 

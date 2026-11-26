@@ -1,7 +1,28 @@
 import configparser
 import pandas as pd
+import os
+import sys
 import gspread
 from datetime import datetime
+
+try:
+    import python_calamine
+    DEFAULT_EXCEL_ENGINE = 'calamine'
+except ImportError:
+    DEFAULT_EXCEL_ENGINE = 'openpyxl'
+
+try:
+    pd.set_option('io.excel.xlsx.reader', DEFAULT_EXCEL_ENGINE)
+except Exception:
+    pass
+
+def read_excel_auto(file_path, **kwargs):
+    if DEFAULT_EXCEL_ENGINE == 'calamine':
+        try:
+            return pd.read_excel(file_path, engine='calamine', **kwargs)
+        except Exception:
+            return pd.read_excel(file_path, engine='openpyxl', **kwargs)
+    return pd.read_excel(file_path, engine='openpyxl', **kwargs)
 
 def sinkronkan_data_sheets():
     try:
@@ -23,10 +44,11 @@ def sinkronkan_data_sheets():
         worksheet.batch_clear(['A2:K'])
 
         print("--> Membaca data dari Piutang_clean_temp.xlsx...")
-        df = pd.read_excel('Piutang_clean_temp.xlsx')
+        df = read_excel_auto('Piutang_clean_temp.xlsx')
 
         df_subset = df.iloc[:, :11]
-        df_subset = df_subset.fillna('')
+        df_subset = df_subset.astype(object).fillna('')
+        
         data_baru = df_subset.values.tolist()
 
         if data_baru:
