@@ -1,7 +1,22 @@
 import configparser
 import os
+import warnings
 import pandas as pd
 
+def baca_excel_adaptif(file_path, sheet_name=0, header=0):
+    try:
+        return pd.read_excel(file_path, sheet_name=sheet_name, header=header, engine="calamine")
+    except Exception:
+        pass
+
+    try:
+        return pd.read_excel(file_path, sheet_name=sheet_name, header=header, engine="openpyxl")
+    except Exception:
+        pass
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        return pd.read_excel(file_path, sheet_name=sheet_name, header=header)
 
 def cek_konfigurasi(config_path="piutang.conf"):
     if not os.path.exists(config_path):
@@ -22,80 +37,54 @@ def cek_konfigurasi(config_path="piutang.conf"):
 
                 return True, giro_cut
             else:
-                print(
-                    f"--> Status giro_stats adalah '{status}'. Script dilewati (skip)."
-                )
+                print(f"--> Status giro_stats adalah '{status}'. Script dilewati (skip).")
                 return False, 0.0
         else:
-            print(
-                "--> Section [GIRO] atau key 'giro_stats' tidak ditemukan di piutang.conf."
-            )
+            print("--> Section [GIRO] atau key 'giro_stats' tidak ditemukan di piutang.conf.")
             return False, 0.0
     except Exception as e:
         print(f"--> Gagal membaca file konfigurasi: {e}")
         return False, 0.0
-
 
 def proses_pencocokan_giro():
     status_aktif, giro_cut = cek_konfigurasi("piutang.conf")
     if not status_aktif:
         return
 
-    print(
-        f"--> Fitur GIRO aktif. Batas toleransi selisih (giro_cut): Rp {giro_cut:,.0f}"
-    )
+    print(f"--> Fitur GIRO aktif. Batas toleransi selisih (giro_cut): Rp {giro_cut:,.0f}")
 
     export_path = "Piutang_clean_temp.xlsx"
     giro_path = "Giro_temp.xlsx"
 
     if not os.path.exists(export_path) or not os.path.exists(giro_path):
-        print(
-            f"--> File '{export_path}' atau '{giro_path}' tidak ditemukan!"
-        )
+        print(f"--> File '{export_path}' atau '{giro_path}' tidak ditemukan!")
         return
 
     print("--> Membaca file Excel...")
 
-    df_export = pd.read_excel(export_path)
-    df_giro = pd.read_excel(giro_path)
+    df_export = baca_excel_adaptif(export_path)
+    df_giro = baca_excel_adaptif(giro_path)
 
     df_export.columns = df_export.columns.str.strip()
     df_giro.columns = df_giro.columns.str.strip()
 
-    df_export["_kode_pelanggan_clean"] = (
-        df_export["Kode Pelanggan"].astype(str).str.strip()
-    )
-    df_export["_no_faktur_clean"] = (
-        df_export["No. Faktur"].astype(str).str.strip()
-    )
+    df_export["_kode_pelanggan_clean"] = df_export["Kode Pelanggan"].astype(str).str.strip()
+    df_export["_no_faktur_clean"] = df_export["No. Faktur"].astype(str).str.strip()
 
-    df_giro["_no_pelanggan_clean"] = (
-        df_giro["No. Pelanggan"].astype(str).str.strip()
-    )
-    df_giro["_no_faktur_so_clean"] = (
-        df_giro["No. Faktur. (SO)"].astype(str).str.strip()
-    )
+    df_giro["_no_pelanggan_clean"] = df_giro["No. Pelanggan"].astype(str).str.strip()
+    df_giro["_no_faktur_so_clean"] = df_giro["No. Faktur. (SO)"].astype(str).str.strip()
 
-    df_export["Nilai Faktur"] = pd.to_numeric(
-        df_export["Nilai Faktur"], errors="coerce"
-    ).fillna(0)
-    df_giro["Nilai terima"] = pd.to_numeric(
-        df_giro["Nilai terima"], errors="coerce"
-    ).fillna(0)
+    df_export["Nilai Faktur"] = pd.to_numeric(df_export["Nilai Faktur"], errors="coerce").fillna(0)
+    df_giro["Nilai terima"] = pd.to_numeric(df_giro["Nilai terima"], errors="coerce").fillna(0)
 
-    print(
-        "--> Menghitung akumulasi penerimaan Giro per Nomor Faktur..."
-    )
+    print("--> Menghitung akumulasi penerimaan Giro per Nomor Faktur...")
     giro_totals = (
-        df_giro.groupby(["_no_pelanggan_clean", "_no_faktur_so_clean"])[
-            "Nilai terima"
-        ]
+        df_giro.groupby(["_no_pelanggan_clean", "_no_faktur_so_clean"])["Nilai terima"]
         .sum()
         .reset_index()
     )
-    giro_totals.rename(
-        columns={"Nilai terima": "_total_nilai_terima"}, inplace=True
-    )
+    
+    giro_totals = giro_totals.rename(columns={"Nilai terima": "_total_nilai_terima"})
 
     df_merged = pd.merge(
         df_export,
@@ -106,8 +95,7 @@ def proses_pencocokan_giro():
     )
 
     is_klop = df_merged["_total_nilai_terima"].notna() & (
-        (df_merged["Nilai Faktur"] - df_merged["_total_nilai_terima"]).abs()
-        <= giro_cut
+        (df_merged["Nilai Faktur"] - df_merged["_total_nilai_terima"]).abs() <= giro_cut
     )
 
     total_dihapus = is_klop.sum()
@@ -117,17 +105,11 @@ def proses_pencocokan_giro():
         return
 
     df_hasil = df_export[~is_klop].copy()
-
-    df_hasil.drop(
-        columns=["_kode_pelanggan_clean", "_no_faktur_clean"], inplace=True
-    )
+    df_hasil = df_hasil.drop(columns=["_kode_pelanggan_clean", "_no_faktur_clean"])
 
     df_hasil.to_excel(export_path, index=False)
 
-    print(
-        f"--> Berhasil menghapus {total_dihapus} data yang klop (dengan toleransi <= Rp {giro_cut:,.0f}) dari '{export_path}'."
-    )
-
+    print(f"--> Berhasil menghapus {total_dihapus} data yang klop (dengan toleransi <= Rp {giro_cut:,.0f}) dari '{export_path}'.")
 
 if __name__ == "__main__":
     proses_pencocokan_giro()

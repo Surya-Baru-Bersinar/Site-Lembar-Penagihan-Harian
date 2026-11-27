@@ -1,7 +1,5 @@
 import configparser
 import pandas as pd
-import os
-import sys
 import gspread
 from datetime import datetime
 
